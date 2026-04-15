@@ -79,7 +79,7 @@ const demoAccounts = DEMO_ACCOUNTS
           untuk desktop, tablet, dan mobile.
         </p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="#kursus">Lihat Kursus</a>
+          <NuxtLink class="btn btn-primary" to="/courses">Lihat Katalog</NuxtLink>
         </div>
         <img
           src="/images/hero-learning.svg"
@@ -155,7 +155,7 @@ const demoAccounts = DEMO_ACCOUNTS
 
   <section class="section" id="kursus">
     <div class="container">
-      <h2>Contoh katalog kursus</h2>
+      <h2>Preview katalog kursus</h2>
       <p v-if="coursesPending" class="status-meta">Memuat data kursus...</p>
       <p v-else-if="coursesError" class="status-meta">
         Gagal memuat kursus dari API.
@@ -183,6 +183,9 @@ const demoAccounts = DEMO_ACCOUNTS
           <p class="course-tools">Tools: {{ (course.tools || []).join(', ') || 'Segera diumumkan' }}</p>
           <p class="course-rating">Rating {{ course.rating_avg.toFixed(1) }}/5 - Lihat detail kursus</p>
         </NuxtLink>
+      </div>
+      <div class="hero-actions">
+        <NuxtLink class="btn btn-secondary" to="/courses">Buka halaman katalog</NuxtLink>
       </div>
     </div>
   </section>

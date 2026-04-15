@@ -87,7 +87,7 @@ const stars = (value: number) => {
 <template>
   <section class="page-head">
     <div class="container">
-      <NuxtLink to="/" class="status-meta">← Kembali ke katalog</NuxtLink>
+      <NuxtLink to="/courses" class="status-meta">&larr; Kembali ke katalog</NuxtLink>
       <p class="eyebrow">Detail Katalog</p>
       <h1 class="page-title">{{ data?.title || 'Memuat kursus...' }}</h1>
       <p class="page-copy">

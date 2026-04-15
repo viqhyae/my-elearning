@@ -10,7 +10,7 @@ const currentUser = computed(() => auth.user.value)
 const navItems = computed(() => {
   const baseItems = [
     { label: 'Home', to: '/' },
-    { label: 'Katalog', to: '/#kursus' },
+    { label: 'Katalog', to: '/courses' },
   ]
 
   if (!isAuthenticated.value) {

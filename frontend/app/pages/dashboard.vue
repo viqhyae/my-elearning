@@ -6,17 +6,41 @@ definePageMeta({
 const auth = useAuth()
 await auth.ensureSession()
 
+if (auth.isAuthenticated.value) {
+  try {
+    await auth.fetchMe()
+  } catch {
+    // auth middleware will handle invalid session on next navigation
+  }
+}
+
 if (process.client && !auth.isAuthenticated.value) {
   await navigateTo('/login')
 }
 
 const currentUser = computed(() => auth.user.value)
+const roleLabel = computed(() => {
+  if (currentUser.value?.role === 'admin') {
+    return 'Admin'
+  }
+
+  if (currentUser.value?.role === 'mentor') {
+    return 'Mentor'
+  }
+
+  return 'Student'
+})
 
 const cards = computed(() => {
   const baseCards = [
     {
       title: 'Profil Login',
-      description: `${currentUser.value?.name || '-'} (${currentUser.value?.email || '-'})`,
+      description: currentUser.value
+        ? `${currentUser.value.name} (${currentUser.value.email})`
+        : 'Data profil belum tersedia.',
+      meta: currentUser.value
+        ? `Role: ${roleLabel.value} · Status: ${currentUser.value.status}`
+        : 'Silakan refresh halaman atau login ulang.',
       to: '/dashboard',
     },
   ]
@@ -81,6 +105,7 @@ const cards = computed(() => {
         <NuxtLink v-for="card in cards" :key="card.title" :to="card.to" class="mode-card">
           <p class="stack-title">{{ card.title }}</p>
           <p class="stack-meta">{{ card.description }}</p>
+          <p v-if="'meta' in card" class="stack-meta">{{ card.meta }}</p>
         </NuxtLink>
       </div>
     </div>
