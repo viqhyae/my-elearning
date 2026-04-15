@@ -18,6 +18,7 @@ export const useAuth = () => {
   const token = useState<string | null>('auth_token', () => null)
   const user = useState<AuthUser | null>('auth_user', () => null)
   const initialized = useState<boolean>('auth_initialized', () => false)
+  const sessionValidated = useState<boolean>('auth_session_validated', () => false)
 
   const runtimeConfig = useRuntimeConfig()
   const apiBase = runtimeConfig.public.apiBase
@@ -60,12 +61,14 @@ export const useAuth = () => {
       }
     }
 
+    sessionValidated.value = false
     initialized.value = true
   }
 
   const clearSession = () => {
     token.value = null
     user.value = null
+    sessionValidated.value = false
     persistSession()
   }
 
@@ -97,6 +100,7 @@ export const useAuth = () => {
 
     token.value = response.token
     user.value = response.user
+    sessionValidated.value = true
     persistSession()
 
     return response.user
@@ -114,6 +118,7 @@ export const useAuth = () => {
     })
 
     user.value = response
+    sessionValidated.value = true
     persistSession()
 
     return response
@@ -126,7 +131,7 @@ export const useAuth = () => {
       return null
     }
 
-    if (user.value) {
+    if (sessionValidated.value && user.value) {
       return user.value
     }
 
