@@ -67,6 +67,12 @@ Jika akun dummy pernah berubah, reset user dummy dengan:
 docker compose exec -T backend php artisan db:seed --class=UserSeeder --force
 ```
 
+Jika data tampilan (course/modul/lesson) kosong, reset seluruh dummy data dengan:
+
+```bash
+docker compose exec -T backend php artisan db:seed --force
+```
+
 ## Fitur Yang Sudah Aktif
 
 - Login/logout berbasis token (Laravel Sanctum).
