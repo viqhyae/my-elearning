@@ -1,12 +1,6 @@
 <script setup lang="ts">
 import { DEMO_ACCOUNTS } from '../constants/demoAccounts'
 
-type ApiHealth = {
-  status: string
-  service: string
-  timestamp: string
-}
-
 type Course = {
   id: number
   title: string
@@ -27,28 +21,6 @@ type Course = {
 
 const runtimeConfig = useRuntimeConfig()
 const apiBase = runtimeConfig.public.apiBase
-
-const {
-  data: healthData,
-  pending: healthPending,
-  error: healthError,
-  refresh: refreshHealth,
-} = await useFetch<ApiHealth>('/api/health', {
-  baseURL: apiBase,
-  server: false,
-})
-
-const apiStatusLabel = computed(() => {
-  if (healthPending.value) {
-    return 'Mengecek koneksi...'
-  }
-
-  if (healthError.value) {
-    return 'Backend belum terhubung'
-  }
-
-  return healthData.value?.status === 'ok' ? 'Backend online' : 'Backend merespons'
-})
 
 const {
   data: coursesData,
@@ -73,7 +45,7 @@ const demoAccounts = DEMO_ACCOUNTS
 
 <template>
   <section class="hero">
-    <div class="container hero-grid">
+    <div class="container hero-grid hero-grid-single">
       <div>
         <p class="eyebrow">Responsive LMS Starter</p>
         <h1 class="hero-title">Platform belajar modern yang siap tumbuh jangka panjang.</h1>
@@ -90,28 +62,6 @@ const demoAccounts = DEMO_ACCOUNTS
           class="hero-visual"
           loading="lazy"
         />
-      </div>
-
-      <div class="status-panel" id="status">
-        <h2>Status Integrasi</h2>
-        <p class="status-line">
-          <span
-            class="dot"
-            :class="{
-              'dot-ok': !healthPending && !healthError,
-              'dot-busy': healthPending,
-              'dot-down': healthError,
-            }"
-          />
-          {{ apiStatusLabel }}
-        </p>
-        <p class="status-meta">Base URL: {{ apiBase }}</p>
-        <p v-if="healthData?.timestamp" class="status-meta">
-          Update terakhir: {{ new Date(healthData.timestamp).toLocaleString() }}
-        </p>
-        <button class="btn btn-secondary btn-block" type="button" @click="refreshHealth()">
-          Refresh status
-        </button>
       </div>
     </div>
   </section>

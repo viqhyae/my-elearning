@@ -133,6 +133,7 @@ const quickBuyMessage = ref('')
 const quickBuyError = ref('')
 const buyingNow = ref(false)
 const latestQuickBuyTransaction = ref<TransactionSummary | null>(null)
+const openModuleIds = ref<number[]>([])
 
 const extractError = (error: unknown, fallback: string) => {
   const data = (error as { data?: { message?: string; errors?: Record<string, string[]> } })?.data
@@ -147,6 +148,72 @@ const extractError = (error: unknown, fallback: string) => {
   }
 
   return data?.message || fallback
+}
+
+const isModuleOpen = (moduleId: number) => openModuleIds.value.includes(moduleId)
+
+const toggleModule = (moduleId: number) => {
+  if (isModuleOpen(moduleId)) {
+    openModuleIds.value = openModuleIds.value.filter((id) => id !== moduleId)
+    return
+  }
+
+  openModuleIds.value = [...openModuleIds.value, moduleId]
+}
+
+watch(
+  () => data.value?.modules,
+  (modules) => {
+    if (!modules?.length) {
+      openModuleIds.value = []
+      return
+    }
+
+    const validIds = new Set(modules.map((module) => module.id))
+    openModuleIds.value = openModuleIds.value.filter((id) => validIds.has(id))
+
+    if (!openModuleIds.value.length) {
+      openModuleIds.value = [modules[0].id]
+    }
+  },
+  { immediate: true }
+)
+
+const onAccordionBeforeEnter = (el: Element) => {
+  const element = el as HTMLElement
+  element.style.height = '0'
+  element.style.opacity = '0'
+}
+
+const onAccordionEnter = (el: Element) => {
+  const element = el as HTMLElement
+  element.style.height = `${element.scrollHeight}px`
+  element.style.opacity = '1'
+}
+
+const onAccordionAfterEnter = (el: Element) => {
+  const element = el as HTMLElement
+  element.style.height = 'auto'
+  element.style.opacity = '1'
+}
+
+const onAccordionBeforeLeave = (el: Element) => {
+  const element = el as HTMLElement
+  element.style.height = `${element.scrollHeight}px`
+  element.style.opacity = '1'
+}
+
+const onAccordionLeave = (el: Element) => {
+  const element = el as HTMLElement
+  void element.offsetHeight
+  element.style.height = '0'
+  element.style.opacity = '0'
+}
+
+const onAccordionAfterLeave = (el: Element) => {
+  const element = el as HTMLElement
+  element.style.height = ''
+  element.style.opacity = ''
 }
 
 const buyNow = async () => {
@@ -265,8 +332,10 @@ const buyNow = async () => {
           <h2>Beli Langsung</h2>
           <div class="purchase-mini-card">
             <p class="purchase-mini-eyebrow">Checkout Instan</p>
-            <p class="stack-title">{{ data.title }}</p>
-            <p class="stack-percent">{{ data.price_label }}</p>
+            <div class="purchase-mini-head">
+              <p class="stack-title">{{ data.title }}</p>
+              <span class="purchase-mini-price">{{ data.price_label }}</span>
+            </div>
             <p class="stack-meta">
               Tanpa keranjang: klik beli, sistem langsung membuat transaksi lalu memproses pembayaran.
             </p>
@@ -303,6 +372,9 @@ const buyNow = async () => {
                 </button>
                 <NuxtLink :to="checkoutPath" class="btn btn-secondary">Lanjut di halaman pembayaran</NuxtLink>
               </div>
+              <p class="purchase-mini-note">
+                Akses kelas aktif otomatis setelah pembayaran sukses.
+              </p>
             </template>
 
             <template v-else>
@@ -319,36 +391,59 @@ const buyNow = async () => {
             <p class="status-meta">{{ data.modules.length }} modul - {{ totalLessons }} lesson</p>
           </div>
           <div class="stack-list">
-            <details v-for="module in data.modules" :key="module.id" class="curriculum-item curriculum-module">
-              <summary class="curriculum-summary">
-                <span class="curriculum-heading">
-                  <span class="curriculum-caret" aria-hidden="true" />
-                  <span class="stack-title">{{ module.order_no }}. {{ module.title }}</span>
-                </span>
-                <span class="curriculum-pill">{{ module.lessons.length }} lesson</span>
-              </summary>
-              <div class="curriculum-panel">
-                <div class="curriculum-panel-inner">
-                  <p class="stack-meta">{{ module.description || 'Deskripsi modul belum ditambahkan.' }}</p>
-                  <div class="stack-list section-spacer-sm">
-                    <div v-for="lesson in module.lessons" :key="lesson.id" class="curriculum-item curriculum-lesson">
-                      <div class="curriculum-panel-inner">
-                        <p class="stack-title">{{ lesson.order_no }}. {{ lesson.title }}</p>
-                        <p class="stack-meta">{{ lesson.description || 'Materi lesson belum diisi.' }}</p>
-                        <p class="stack-meta">
-                          Durasi: {{ lesson.duration_minutes ? `${lesson.duration_minutes} menit` : '-' }}
-                        </p>
-                        <p class="stack-meta">Topik: {{ lesson.topics.join(', ') || '-' }}</p>
-                        <p class="stack-meta">Tools: {{ lesson.tools.join(', ') || '-' }}</p>
+            <div
+              v-for="module in data.modules"
+              :key="module.id"
+              class="curriculum-item curriculum-module"
+              :class="{ 'is-open': isModuleOpen(module.id) }"
+            >
+              <div class="curriculum-summary">
+                <button
+                  type="button"
+                  class="curriculum-toggle"
+                  :class="{ 'is-open': isModuleOpen(module.id) }"
+                  @click="toggleModule(module.id)"
+                >
+                  <span class="curriculum-heading">
+                    <span class="curriculum-caret" aria-hidden="true" />
+                    <span class="stack-title">{{ module.order_no }}. {{ module.title }}</span>
+                  </span>
+                  <span class="curriculum-pill">{{ module.lessons.length }} lesson</span>
+                </button>
+              </div>
+
+              <Transition
+                name="accordion-slide"
+                @before-enter="onAccordionBeforeEnter"
+                @enter="onAccordionEnter"
+                @after-enter="onAccordionAfterEnter"
+                @before-leave="onAccordionBeforeLeave"
+                @leave="onAccordionLeave"
+                @after-leave="onAccordionAfterLeave"
+              >
+                <div v-if="isModuleOpen(module.id)" class="curriculum-panel">
+                  <div class="curriculum-panel-inner">
+                    <p class="stack-meta">{{ module.description || 'Deskripsi modul belum ditambahkan.' }}</p>
+                    <div class="stack-list section-spacer-sm">
+                      <div v-for="lesson in module.lessons" :key="lesson.id" class="curriculum-item curriculum-lesson">
+                        <div class="curriculum-panel-inner">
+                          <p class="stack-title">{{ lesson.order_no }}. {{ lesson.title }}</p>
+                          <p class="stack-meta">{{ lesson.description || 'Materi lesson belum diisi.' }}</p>
+                          <p class="stack-meta">
+                            Durasi: {{ lesson.duration_minutes ? `${lesson.duration_minutes} menit` : '-' }}
+                          </p>
+                          <p class="stack-meta">Topik: {{ lesson.topics.join(', ') || '-' }}</p>
+                          <p class="stack-meta">Tools: {{ lesson.tools.join(', ') || '-' }}</p>
+                        </div>
                       </div>
+                      <p v-if="!module.lessons.length" class="empty-state">
+                        Belum ada lesson pada modul ini.
+                      </p>
                     </div>
-                    <p v-if="!module.lessons.length" class="empty-state">
-                      Belum ada lesson pada modul ini.
-                    </p>
                   </div>
                 </div>
-              </div>
-            </details>
+              </Transition>
+            </div>
           </div>
         </article>
 

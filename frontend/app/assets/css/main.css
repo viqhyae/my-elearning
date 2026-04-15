@@ -275,6 +275,14 @@ video {
   align-items: stretch;
 }
 
+.hero-grid-single {
+  grid-template-columns: 1fr;
+}
+
+.hero-grid-single > div {
+  max-width: 840px;
+}
+
 
 .eyebrow {
   margin: 0 0 10px;
@@ -992,26 +1000,84 @@ video {
 }
 
 .purchase-mini-card {
+  position: relative;
+  overflow: hidden;
   border: 1px solid #bfdbfe;
-  border-radius: 12px;
-  background: linear-gradient(165deg, #ffffff, #f1f9ff 65%, #ecfeff);
-  padding: 14px;
+  border-radius: 16px;
+  background: linear-gradient(165deg, #ffffff 0%, #f3faff 60%, #ecfeff 100%);
+  box-shadow: 0 14px 28px rgba(2, 132, 199, 0.12);
+  padding: 18px;
   display: grid;
-  gap: 8px;
+  gap: 10px;
+}
+
+.purchase-mini-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 82% 12%, rgba(14, 165, 233, 0.16), transparent 48%);
+  pointer-events: none;
+}
+
+.purchase-mini-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .purchase-mini-eyebrow {
   margin: 0;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.07em;
   color: #0369a1;
   text-transform: uppercase;
 }
 
+.purchase-mini-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.purchase-mini-head .stack-title {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.purchase-mini-price {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 11px;
+  background: linear-gradient(135deg, #0f766e, #0284c7);
+  color: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
 .purchase-mini-form {
-  margin-top: 2px;
+  margin-top: 4px;
   gap: 10px;
+}
+
+.purchase-mini-card .status-meta:last-of-type {
+  margin-bottom: 0;
+}
+
+.purchase-mini-card .form-actions {
+  margin-top: 4px;
+}
+
+.purchase-mini-note {
+  margin: 0;
+  color: #0f4c81;
+  font-size: 0.82rem;
+  line-height: 1.55;
 }
 
 .voucher-course-grid {
