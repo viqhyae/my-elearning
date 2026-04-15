@@ -51,6 +51,9 @@ type AdminCourse = {
   level: string
   duration_weeks: number | null
   category: string | null
+  price_amount: number
+  currency: string
+  price_label: string
   status: string
   is_published: boolean
   image_url: string
@@ -139,6 +142,8 @@ const courseForm = reactive({
   level: 'Pemula',
   duration_weeks: 4,
   category: 'Productivity',
+  price_amount: 299000,
+  currency: 'IDR',
   is_published: true,
   image_url: '/images/course-project.svg',
 })
@@ -176,6 +181,8 @@ const resetCourseForm = () => {
   courseForm.level = 'Pemula'
   courseForm.duration_weeks = 4
   courseForm.category = 'Productivity'
+  courseForm.price_amount = 299000
+  courseForm.currency = 'IDR'
   courseForm.is_published = true
   courseForm.image_url = '/images/course-project.svg'
   courseFormError.value = ''
@@ -188,6 +195,8 @@ const startEditCourse = (course: AdminCourse) => {
   courseForm.level = course.level
   courseForm.duration_weeks = course.duration_weeks || 1
   courseForm.category = course.category || ''
+  courseForm.price_amount = course.price_amount || 0
+  courseForm.currency = course.currency || 'IDR'
   courseForm.is_published = course.is_published
   courseForm.image_url = course.image_url
   courseFormError.value = ''
@@ -209,6 +218,8 @@ const submitCourse = async () => {
       level: courseForm.level,
       duration_weeks: Number(courseForm.duration_weeks) || null,
       category: courseForm.category || null,
+      price_amount: Number(courseForm.price_amount) || 0,
+      currency: courseForm.currency || 'IDR',
       is_published: courseForm.is_published,
       image_url: courseForm.image_url,
     }
@@ -457,6 +468,16 @@ const formatDateTime = (value: string) => new Date(value).toLocaleString('id-ID'
               <input v-model="courseForm.category" type="text" placeholder="Analytics" />
             </label>
             <label class="form-field">
+              <span>Harga (IDR)</span>
+              <input v-model.number="courseForm.price_amount" type="number" min="0" step="1000" />
+            </label>
+            <label class="form-field">
+              <span>Mata uang</span>
+              <select v-model="courseForm.currency">
+                <option value="IDR">IDR</option>
+              </select>
+            </label>
+            <label class="form-field">
               <span>Gambar Dummy</span>
               <select v-model="courseForm.image_url">
                 <option value="/images/course-project.svg">Project</option>
@@ -500,6 +521,7 @@ const formatDateTime = (value: string) => new Date(value).toLocaleString('id-ID'
                   <th>Course</th>
                   <th>Level</th>
                   <th>Status</th>
+                  <th>Harga</th>
                   <th>Students</th>
                   <th>Completion</th>
                   <th>Aksi</th>
@@ -522,6 +544,7 @@ const formatDateTime = (value: string) => new Date(value).toLocaleString('id-ID'
                       {{ course.status }}
                     </span>
                   </td>
+                  <td>{{ course.price_label }}</td>
                   <td>{{ course.enrolled_students }}</td>
                   <td>{{ course.completion_rate }}%</td>
                   <td>

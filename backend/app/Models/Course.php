@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'level',
     'duration_weeks',
     'category',
+    'price_amount',
+    'currency',
     'mentor_user_id',
     'trailer_video_url',
     'tools',
@@ -44,5 +47,15 @@ class Course extends Model
     public function modules(): HasMany
     {
         return $this->hasMany(CourseModule::class, 'course_id')->orderBy('order_no');
+    }
+
+    public function vouchers(): BelongsToMany
+    {
+        return $this->belongsToMany(Voucher::class, 'course_voucher');
+    }
+
+    public function paymentTransactions(): HasMany
+    {
+        return $this->hasMany(PaymentTransaction::class, 'course_id');
     }
 }

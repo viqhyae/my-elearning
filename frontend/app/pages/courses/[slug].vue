@@ -34,6 +34,9 @@ type CourseDetail = {
   level: string
   duration: string | null
   category: string | null
+  price_amount: number
+  currency: string
+  price_label: string
   image_url: string
   trailer_video_url: string | null
   tools: string[]
@@ -47,7 +50,10 @@ type CourseDetail = {
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiBase = runtimeConfig.public.apiBase
+const auth = useAuth()
 const slug = computed(() => String(route.params.slug || ''))
+
+await auth.ensureSession()
 
 const {
   data,
@@ -80,8 +86,16 @@ const trailerMode = computed<'none' | 'iframe' | 'video'>(() => {
 
 const stars = (value: number) => {
   const rounded = Math.max(1, Math.min(5, Math.round(value)))
-  return '★'.repeat(rounded) + '☆'.repeat(5 - rounded)
+  return '*'.repeat(rounded)
 }
+
+const checkoutPath = computed(() => {
+  if (!data.value) {
+    return '/payments'
+  }
+
+  return `/payments?course=${data.value.id}`
+})
 </script>
 
 <template>
@@ -108,15 +122,19 @@ const stars = (value: number) => {
         <div class="panel-grid">
           <article class="panel-card">
             <img :src="data.image_url" :alt="`Cover ${data.title}`" class="course-detail-cover" loading="lazy" />
-            <p class="course-meta">{{ data.level }} • {{ data.duration || 'Durasi fleksibel' }}</p>
+            <p class="course-meta">{{ data.level }} - {{ data.duration || 'Durasi fleksibel' }}</p>
             <p class="stack-meta">Kategori: {{ data.category || 'General' }}</p>
             <p class="stack-meta">Mentor: {{ data.mentor?.name || 'Tim Mentor' }}</p>
             <p class="stack-meta">
               Rating: {{ data.rating_avg.toFixed(1) }}/5 ({{ data.reviews.length }} review)
             </p>
+            <p class="stack-percent">Harga: {{ data.price_label }}</p>
             <p>{{ data.description || 'Deskripsi kursus belum ditambahkan.' }}</p>
             <div class="hero-actions">
-              <NuxtLink to="/login" class="btn btn-primary">Login untuk mulai belajar</NuxtLink>
+              <NuxtLink v-if="auth.isAuthenticated.value" :to="checkoutPath" class="btn btn-primary">
+                Beli kelas ini
+              </NuxtLink>
+              <NuxtLink v-else to="/login" class="btn btn-primary">Login untuk mulai belajar</NuxtLink>
             </div>
           </article>
 
@@ -144,7 +162,7 @@ const stars = (value: number) => {
         <article class="panel-card section-spacer">
           <div class="split-row">
             <h2>Kurikulum</h2>
-            <p class="status-meta">{{ data.modules.length }} modul • {{ totalLessons }} lesson</p>
+            <p class="status-meta">{{ data.modules.length }} modul - {{ totalLessons }} lesson</p>
           </div>
           <div class="stack-list">
             <details v-for="module in data.modules" :key="module.id" class="curriculum-item curriculum-module">
@@ -185,7 +203,7 @@ const stars = (value: number) => {
           <div class="feature-grid reviews-grid">
             <article v-for="review in data.reviews" :key="review.id" class="feature-card">
               <p class="stack-title">{{ review.author }}</p>
-              <p class="course-rating">{{ stars(review.rating) }} • {{ review.rating }}/5</p>
+              <p class="course-rating">{{ stars(review.rating) }} - {{ review.rating }}/5</p>
               <p class="stack-meta">{{ new Date(review.created_at).toLocaleDateString('id-ID') }}</p>
               <p>{{ review.comment }}</p>
             </article>

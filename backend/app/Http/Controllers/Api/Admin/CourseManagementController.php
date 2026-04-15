@@ -22,6 +22,8 @@ class CourseManagementController extends Controller
                 'level',
                 'duration_weeks',
                 'category',
+                'price_amount',
+                'currency',
                 'is_published',
                 'published_at',
                 'updated_at',
@@ -42,6 +44,8 @@ class CourseManagementController extends Controller
             'level' => ['required', 'string', 'max:30'],
             'duration_weeks' => ['nullable', 'integer', 'min:1', 'max:99'],
             'category' => ['nullable', 'string', 'max:100'],
+            'price_amount' => ['required', 'integer', 'min:0'],
+            'currency' => ['nullable', 'string', 'size:3'],
             'is_published' => ['required', 'boolean'],
             'image_url' => ['nullable', 'string', 'max:255'],
         ]);
@@ -55,6 +59,8 @@ class CourseManagementController extends Controller
             'level' => $payload['level'],
             'duration_weeks' => $payload['duration_weeks'] ?? null,
             'category' => $payload['category'] ?? null,
+            'price_amount' => $payload['price_amount'],
+            'currency' => strtoupper($payload['currency'] ?? 'IDR'),
             'is_published' => $payload['is_published'],
             'published_at' => $payload['is_published'] ? Carbon::now() : null,
         ]);
@@ -70,6 +76,8 @@ class CourseManagementController extends Controller
             'level' => ['required', 'string', 'max:30'],
             'duration_weeks' => ['nullable', 'integer', 'min:1', 'max:99'],
             'category' => ['nullable', 'string', 'max:100'],
+            'price_amount' => ['required', 'integer', 'min:0'],
+            'currency' => ['nullable', 'string', 'size:3'],
             'is_published' => ['required', 'boolean'],
             'image_url' => ['nullable', 'string', 'max:255'],
         ]);
@@ -85,6 +93,8 @@ class CourseManagementController extends Controller
             'level' => $payload['level'],
             'duration_weeks' => $payload['duration_weeks'] ?? null,
             'category' => $payload['category'] ?? null,
+            'price_amount' => $payload['price_amount'],
+            'currency' => strtoupper($payload['currency'] ?? 'IDR'),
             'is_published' => $payload['is_published'],
         ]);
 
@@ -124,6 +134,9 @@ class CourseManagementController extends Controller
             'level' => $course->level,
             'duration_weeks' => $course->duration_weeks,
             'category' => $course->category,
+            'price_amount' => (int) $course->price_amount,
+            'currency' => $course->currency ?: 'IDR',
+            'price_label' => ($course->currency ?: 'IDR').' '.number_format((int) $course->price_amount, 0, ',', '.'),
             'status' => $course->is_published ? 'Published' : 'Draft',
             'is_published' => (bool) $course->is_published,
             'image_url' => $imageUrl,

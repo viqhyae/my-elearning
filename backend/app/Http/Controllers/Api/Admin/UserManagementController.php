@@ -24,6 +24,7 @@ class UserManagementController extends Controller
                     'email' => $user->email,
                     'role' => $user->role,
                     'status' => $user->status,
+                    'avatar_url' => $user->avatar_url,
                     'created_at' => optional($user->created_at)->toISOString(),
                 ];
             });
@@ -49,6 +50,7 @@ class UserManagementController extends Controller
             'role' => $payload['role'],
             'status' => $payload['status'],
             'password' => Hash::make($password),
+            'avatar_url' => null,
         ]);
 
         return response()->json([
@@ -59,6 +61,7 @@ class UserManagementController extends Controller
                 'email' => $user->email,
                 'role' => $user->role,
                 'status' => $user->status,
+                'avatar_url' => $user->avatar_url,
                 'created_at' => optional($user->created_at)->toISOString(),
             ],
             'password' => $password,
@@ -93,6 +96,7 @@ class UserManagementController extends Controller
                 'email' => $user->email,
                 'role' => $user->role,
                 'status' => $user->status,
+                'avatar_url' => $user->avatar_url,
             ],
         ]);
     }

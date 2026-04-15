@@ -17,12 +17,17 @@ const navItems = computed(() => {
     return baseItems
   }
 
-  const authenticatedItems = [{ label: 'Dashboard', to: '/dashboard' }]
+  const authenticatedItems = [
+    { label: 'Dashboard', to: '/dashboard' },
+    { label: 'Pembayaran', to: '/payments' },
+    { label: 'Profil', to: '/profile' },
+  ]
 
   if (currentUser.value?.role === 'admin') {
     authenticatedItems.push(
       { label: 'Admin', to: '/admin' },
       { label: 'User Role', to: '/admin/users' },
+      { label: 'Voucher', to: '/admin/vouchers' },
       { label: 'Mentor Studio', to: '/mentor' }
     )
   } else if (currentUser.value?.role === 'mentor') {
@@ -70,6 +75,12 @@ const handleLogout = async () => {
   await auth.logout()
   await navigateTo('/login')
 }
+
+const avatarInitial = computed(() => {
+  const name = currentUser.value?.name || ''
+
+  return name.trim().charAt(0).toUpperCase() || 'U'
+})
 </script>
 
 <template>
@@ -94,7 +105,18 @@ const handleLogout = async () => {
         <div class="auth-actions">
           <template v-if="isAuthenticated">
             <span class="role-pill">{{ roleBadge }}</span>
-            <span class="user-name">{{ currentUser?.name }}</span>
+            <NuxtLink to="/profile" class="user-chip user-link">
+              <span class="avatar-circle">
+                <img
+                  v-if="currentUser?.avatar_url"
+                  :src="currentUser.avatar_url"
+                  alt="Foto profil"
+                  class="avatar-circle-image"
+                />
+                <span v-else>{{ avatarInitial }}</span>
+              </span>
+              <span class="user-name">{{ currentUser?.name }}</span>
+            </NuxtLink>
             <button type="button" class="btn btn-secondary btn-small" @click="handleLogout">
               Logout
             </button>

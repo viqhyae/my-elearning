@@ -4,6 +4,7 @@ type AuthUser = {
   email: string
   role: 'admin' | 'mentor' | 'student'
   status: 'active' | 'inactive'
+  avatar_url: string | null
 }
 
 type LoginResponse = {

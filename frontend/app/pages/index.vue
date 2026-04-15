@@ -15,6 +15,9 @@ type Course = {
   level: string
   duration: string | null
   category: string | null
+  price_amount: number
+  currency: string
+  price_label: string
   image_url: string
   trailer_video_url: string | null
   tools: string[]
@@ -178,6 +181,7 @@ const demoAccounts = DEMO_ACCOUNTS
           <p class="course-meta">
             {{ course.level }} - {{ course.duration || 'Durasi fleksibel' }}
           </p>
+          <p class="stack-percent">{{ course.price_label }}</p>
           <p class="stack-meta">Mentor: {{ course.mentor_name || 'Tim Mentor' }}</p>
           <p>{{ course.description || 'Deskripsi akan ditambahkan.' }}</p>
           <p class="course-tools">Tools: {{ (course.tools || []).join(', ') || 'Segera diumumkan' }}</p>

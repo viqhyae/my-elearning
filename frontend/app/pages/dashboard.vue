@@ -39,9 +39,14 @@ const cards = computed(() => {
         ? `${currentUser.value.name} (${currentUser.value.email})`
         : 'Data profil belum tersedia.',
       meta: currentUser.value
-        ? `Role: ${roleLabel.value} · Status: ${currentUser.value.status}`
+        ? `Role: ${roleLabel.value} - Status: ${currentUser.value.status}`
         : 'Silakan refresh halaman atau login ulang.',
-      to: '/dashboard',
+      to: '/profile',
+    },
+    {
+      title: 'Pembayaran',
+      description: 'Checkout kelas, pakai voucher, dan cek riwayat transaksi.',
+      to: '/payments',
     },
   ]
 
@@ -57,6 +62,11 @@ const cards = computed(() => {
         title: 'Role Management',
         description: 'Atur role serta status akun user.',
         to: '/admin/users',
+      },
+      {
+        title: 'Voucher Promo',
+        description: 'Atur promo kelas berdasarkan voucher dan harga diskon.',
+        to: '/admin/vouchers',
       },
     ]
   }
