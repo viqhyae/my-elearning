@@ -43,6 +43,12 @@ a {
   text-decoration: none;
 }
 
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
 .shell {
   min-height: 100vh;
 }
@@ -1379,6 +1385,8 @@ summary.curriculum-summary::-webkit-details-marker {
     max-width: 52vw;
     gap: 10px;
     scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
   }
 
   .auth-actions {
