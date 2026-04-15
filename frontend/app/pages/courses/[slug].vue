@@ -223,7 +223,7 @@ const buyNow = async () => {
       </article>
 
       <template v-else-if="data">
-        <div class="panel-grid">
+        <div class="panel-grid course-detail-grid">
           <article class="panel-card">
             <img :src="data.image_url" :alt="`Cover ${data.title}`" class="course-detail-cover" loading="lazy" />
             <p class="course-meta">{{ data.level }} - {{ data.duration || 'Durasi fleksibel' }}</p>
@@ -258,57 +258,60 @@ const buyNow = async () => {
               <span v-for="tool in data.tools" :key="tool" class="tag">{{ tool }}</span>
               <p v-if="!data.tools.length" class="status-meta">Belum ada tools yang ditentukan.</p>
             </div>
-
-            <div class="purchase-mini-card section-spacer-sm">
-              <p class="purchase-mini-eyebrow">Beli Langsung</p>
-              <p class="stack-title">{{ data.title }}</p>
-              <p class="stack-percent">{{ data.price_label }}</p>
-              <p class="stack-meta">
-                Tanpa keranjang: klik beli, sistem langsung membuat transaksi lalu memproses pembayaran.
-              </p>
-
-              <template v-if="auth.isAuthenticated.value">
-                <div class="form-grid purchase-mini-form">
-                  <label class="form-field form-field-full">
-                    <span>Kode Voucher (opsional)</span>
-                    <input
-                      v-model="quickBuyForm.voucher_code"
-                      type="text"
-                      placeholder="Contoh: HEMAT50K"
-                    />
-                  </label>
-                  <label class="form-field form-field-full">
-                    <span>Metode Bayar</span>
-                    <select v-model="quickBuyForm.payment_method">
-                      <option v-for="method in paymentMethodOptions" :key="method.value" :value="method.value">
-                        {{ method.label }}
-                      </option>
-                    </select>
-                  </label>
-                </div>
-
-                <p v-if="quickBuyError" class="status-meta status-error">{{ quickBuyError }}</p>
-                <p v-if="quickBuyMessage" class="status-meta">{{ quickBuyMessage }}</p>
-                <p v-if="latestQuickBuyTransaction" class="status-meta">
-                  Ref transaksi: {{ latestQuickBuyTransaction.reference }} ({{ latestQuickBuyTransaction.final_price_label }})
-                </p>
-
-                <div class="form-actions">
-                  <button type="button" class="btn btn-primary" :disabled="buyingNow" @click="buyNow()">
-                    {{ buyingNow ? 'Memproses pembelian...' : 'Beli Kelas Sekarang' }}
-                  </button>
-                  <NuxtLink :to="checkoutPath" class="btn btn-secondary">Lanjut di halaman pembayaran</NuxtLink>
-                </div>
-              </template>
-
-              <template v-else>
-                <div class="form-actions">
-                  <NuxtLink to="/login" class="btn btn-primary">Login untuk beli kelas</NuxtLink>
-                </div>
-              </template>
-            </div>
           </article>
         </div>
+
+        <article class="panel-card section-spacer-sm">
+          <h2>Beli Langsung</h2>
+          <div class="purchase-mini-card">
+            <p class="purchase-mini-eyebrow">Checkout Instan</p>
+            <p class="stack-title">{{ data.title }}</p>
+            <p class="stack-percent">{{ data.price_label }}</p>
+            <p class="stack-meta">
+              Tanpa keranjang: klik beli, sistem langsung membuat transaksi lalu memproses pembayaran.
+            </p>
+
+            <template v-if="auth.isAuthenticated.value">
+              <div class="form-grid purchase-mini-form">
+                <label class="form-field form-field-full">
+                  <span>Kode Voucher (opsional)</span>
+                  <input
+                    v-model="quickBuyForm.voucher_code"
+                    type="text"
+                    placeholder="Contoh: HEMAT50K"
+                  />
+                </label>
+                <label class="form-field form-field-full">
+                  <span>Metode Bayar</span>
+                  <select v-model="quickBuyForm.payment_method">
+                    <option v-for="method in paymentMethodOptions" :key="method.value" :value="method.value">
+                      {{ method.label }}
+                    </option>
+                  </select>
+                </label>
+              </div>
+
+              <p v-if="quickBuyError" class="status-meta status-error">{{ quickBuyError }}</p>
+              <p v-if="quickBuyMessage" class="status-meta">{{ quickBuyMessage }}</p>
+              <p v-if="latestQuickBuyTransaction" class="status-meta">
+                Ref transaksi: {{ latestQuickBuyTransaction.reference }} ({{ latestQuickBuyTransaction.final_price_label }})
+              </p>
+
+              <div class="form-actions">
+                <button type="button" class="btn btn-primary" :disabled="buyingNow" @click="buyNow()">
+                  {{ buyingNow ? 'Memproses pembelian...' : 'Beli Kelas Sekarang' }}
+                </button>
+                <NuxtLink :to="checkoutPath" class="btn btn-secondary">Lanjut di halaman pembayaran</NuxtLink>
+              </div>
+            </template>
+
+            <template v-else>
+              <div class="form-actions">
+                <NuxtLink to="/login" class="btn btn-primary">Login untuk beli kelas</NuxtLink>
+              </div>
+            </template>
+          </div>
+        </article>
 
         <article class="panel-card section-spacer">
           <div class="split-row">

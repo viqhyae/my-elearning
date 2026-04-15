@@ -15,6 +15,13 @@ if ! grep -q '^APP_KEY=base64:' .env; then
   php artisan key:generate --force
 fi
 
+mkdir -p storage/logs bootstrap/cache
+touch storage/logs/laravel.log
+
+# Windows bind mount can ignore/choke on chown; keep startup resilient.
+chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
+chmod -R ug+rwX storage bootstrap/cache 2>/dev/null || true
+
 until nc -z "${DB_HOST:-postgres}" "${DB_PORT:-5432}"; do
   echo "Waiting for postgres..."
   sleep 2
