@@ -1,6 +1,8 @@
 <script setup lang="ts">
 const route = useRoute()
 const auth = useAuth()
+const navDropdownRef = ref<HTMLElement | null>(null)
+const isOverflowOpen = ref(false)
 
 await auth.ensureSession()
 
@@ -42,6 +44,22 @@ const navItems = computed(() => {
   return [...baseItems, ...authenticatedItems]
 })
 
+const primaryNavItems = computed(() => {
+  if (!isAuthenticated.value) {
+    return navItems.value
+  }
+
+  const primaryOrder = ['/', '/courses', '/dashboard', '/payments']
+
+  return navItems.value.filter((item) => primaryOrder.includes(item.to))
+})
+
+const overflowNavItems = computed(() => {
+  const primaryPaths = new Set(primaryNavItems.value.map((item) => item.to))
+
+  return navItems.value.filter((item) => !primaryPaths.has(item.to))
+})
+
 const isActive = (to: string) => {
   if (to.includes('#')) {
     const [path, hash] = to.split('#')
@@ -72,6 +90,7 @@ const roleBadge = computed(() => {
 })
 
 const handleLogout = async () => {
+  isOverflowOpen.value = false
   await auth.logout()
   await navigateTo('/login')
 }
@@ -80,6 +99,45 @@ const avatarInitial = computed(() => {
   const name = currentUser.value?.name || ''
 
   return name.trim().charAt(0).toUpperCase() || 'U'
+})
+
+const hasOverflowMenu = computed(() => overflowNavItems.value.length > 0)
+const isOverflowActive = computed(() => overflowNavItems.value.some((item) => isActive(item.to)))
+
+const toggleOverflowMenu = () => {
+  isOverflowOpen.value = !isOverflowOpen.value
+}
+
+const closeOverflowMenu = () => {
+  isOverflowOpen.value = false
+}
+
+const onClickOutside = (event: PointerEvent) => {
+  const target = event.target as Node | null
+
+  if (!target) {
+    return
+  }
+
+  if (!navDropdownRef.value?.contains(target)) {
+    closeOverflowMenu()
+  }
+}
+
+const onEscape = (event: KeyboardEvent) => {
+  if (event.key === 'Escape') {
+    closeOverflowMenu()
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('pointerdown', onClickOutside)
+  document.addEventListener('keydown', onEscape)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', onClickOutside)
+  document.removeEventListener('keydown', onEscape)
 })
 </script>
 
@@ -93,14 +151,41 @@ const avatarInitial = computed(() => {
         </NuxtLink>
         <nav class="nav-links">
           <NuxtLink
-            v-for="item in navItems"
+            v-for="item in primaryNavItems"
             :key="item.to"
             :to="item.to"
             class="nav-link"
             :class="{ 'nav-link-active': isActive(item.to) }"
+            @click="closeOverflowMenu()"
           >
             {{ item.label }}
           </NuxtLink>
+
+          <div v-if="hasOverflowMenu" ref="navDropdownRef" class="nav-dropdown">
+            <button
+              type="button"
+              class="nav-link nav-dropdown-trigger"
+              :class="{ 'nav-link-active': isOverflowActive || isOverflowOpen }"
+              :aria-expanded="isOverflowOpen"
+              @click="toggleOverflowMenu()"
+            >
+              Menu
+              <span class="nav-dropdown-caret" aria-hidden="true" />
+            </button>
+
+            <div v-if="isOverflowOpen" class="nav-dropdown-menu">
+              <NuxtLink
+                v-for="item in overflowNavItems"
+                :key="item.to"
+                :to="item.to"
+                class="nav-dropdown-link"
+                :class="{ 'nav-dropdown-link-active': isActive(item.to) }"
+                @click="closeOverflowMenu()"
+              >
+                {{ item.label }}
+              </NuxtLink>
+            </div>
+          </div>
         </nav>
         <div class="auth-actions">
           <template v-if="isAuthenticated">

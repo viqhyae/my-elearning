@@ -19,6 +19,19 @@ type PasswordUpdateResponse = {
   message: string
 }
 
+type AvatarUploadResponse = {
+  message: string
+  avatar_url: string
+  user: {
+    id: number
+    name: string
+    email: string
+    role: 'admin' | 'mentor' | 'student'
+    status: 'active' | 'inactive'
+    avatar_url: string | null
+  }
+}
+
 const auth = useAuth()
 const runtimeConfig = useRuntimeConfig()
 const apiBase = runtimeConfig.public.apiBase
@@ -43,8 +56,13 @@ const profileMessage = ref('')
 const profileError = ref('')
 const passwordMessage = ref('')
 const passwordError = ref('')
+const avatarUploadMessage = ref('')
+const avatarUploadError = ref('')
 const savingProfile = ref(false)
 const savingPassword = ref(false)
+const uploadingAvatar = ref(false)
+const avatarFileInputRef = ref<HTMLInputElement | null>(null)
+const selectedAvatarFile = ref<File | null>(null)
 
 const profileForm = reactive({
   name: '',
@@ -109,6 +127,61 @@ const pickAvatar = (url: string) => {
 
 const clearAvatar = () => {
   profileForm.avatar_url = ''
+  selectedAvatarFile.value = null
+  avatarUploadMessage.value = ''
+  avatarUploadError.value = ''
+
+  if (avatarFileInputRef.value) {
+    avatarFileInputRef.value.value = ''
+  }
+}
+
+const handleAvatarFileChange = (event: Event) => {
+  const target = event.target as HTMLInputElement | null
+  const file = target?.files?.[0] || null
+
+  selectedAvatarFile.value = file
+  avatarUploadMessage.value = ''
+  avatarUploadError.value = ''
+}
+
+const selectedAvatarFilename = computed(() => selectedAvatarFile.value?.name || '')
+
+const uploadAvatar = async () => {
+  if (!selectedAvatarFile.value) {
+    avatarUploadError.value = 'Pilih file gambar dulu sebelum upload.'
+    return
+  }
+
+  uploadingAvatar.value = true
+  avatarUploadError.value = ''
+  avatarUploadMessage.value = ''
+
+  const formData = new FormData()
+  formData.append('avatar', selectedAvatarFile.value)
+
+  try {
+    const response = await $fetch<AvatarUploadResponse>('/api/me/avatar', {
+      method: 'POST',
+      baseURL: apiBase,
+      headers: headers.value,
+      body: formData,
+    })
+
+    profileForm.avatar_url = response.avatar_url || ''
+    avatarUploadMessage.value = response.message
+    selectedAvatarFile.value = null
+
+    if (avatarFileInputRef.value) {
+      avatarFileInputRef.value.value = ''
+    }
+
+    await auth.fetchMe()
+  } catch (error: unknown) {
+    avatarUploadError.value = extractError(error, 'Upload foto profil gagal.')
+  } finally {
+    uploadingAvatar.value = false
+  }
 }
 
 const extractError = (error: unknown, fallback: string) => {
@@ -251,24 +324,34 @@ const savePassword = async () => {
 
         <article class="panel-card">
           <h2>Ubah Profil</h2>
-          <p class="stack-meta">Isi data di bawah, lalu klik Simpan Profil.</p>
+          <p class="stack-meta">Isi nama, upload foto, lalu klik Simpan Profil.</p>
           <div class="form-grid">
             <label class="form-field form-field-full">
               <span>Nama lengkap</span>
               <input v-model="profileForm.name" type="text" placeholder="Nama lengkap" />
             </label>
             <label class="form-field form-field-full">
-              <span>URL Foto Profil</span>
+              <span>Upload foto profil</span>
               <input
-                v-model="profileForm.avatar_url"
-                type="text"
-                placeholder="/images/avatar-alya.svg atau https://..."
+                ref="avatarFileInputRef"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                @change="handleAvatarFileChange($event)"
               />
             </label>
           </div>
+          <p class="stack-meta">
+            {{ selectedAvatarFilename ? `File dipilih: ${selectedAvatarFilename}` : 'Belum ada file dipilih.' }}
+          </p>
+          <p class="stack-meta">Format yang didukung: JPG, PNG, WEBP (maks. 3 MB).</p>
+          <p v-if="avatarUploadError" class="status-meta status-error">{{ avatarUploadError }}</p>
+          <p v-if="avatarUploadMessage" class="status-meta">{{ avatarUploadMessage }}</p>
           <p v-if="profileError" class="status-meta status-error">{{ profileError }}</p>
           <p v-if="profileMessage" class="status-meta">{{ profileMessage }}</p>
           <div class="form-actions">
+            <button type="button" class="btn btn-secondary" :disabled="uploadingAvatar" @click="uploadAvatar()">
+              {{ uploadingAvatar ? 'Mengupload...' : 'Upload Foto' }}
+            </button>
             <button type="button" class="btn btn-primary" :disabled="savingProfile" @click="saveProfile()">
               {{ savingProfile ? 'Menyimpan...' : 'Simpan Profil' }}
             </button>

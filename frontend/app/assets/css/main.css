@@ -113,7 +113,7 @@ video {
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 18px;
+  gap: 10px;
   color: var(--muted);
   font-weight: 500;
 }
@@ -205,6 +205,61 @@ video {
 }
 
 .nav-link-active {
+  background: linear-gradient(135deg, #0f766e, #0284c7);
+  color: #ffffff;
+}
+
+.nav-dropdown {
+  position: relative;
+}
+
+.nav-dropdown-trigger {
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-dropdown-caret {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translateY(-1px);
+  transform-origin: center;
+}
+
+.nav-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.14);
+  padding: 6px;
+  z-index: 80;
+}
+
+.nav-dropdown-link {
+  display: block;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #334155;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.nav-dropdown-link:hover {
+  background: #eff6ff;
+  color: #075985;
+}
+
+.nav-dropdown-link-active {
   background: linear-gradient(135deg, #0f766e, #0284c7);
   color: #ffffff;
 }
@@ -934,6 +989,29 @@ video {
   border-radius: 12px;
   background: #f0f9ff;
   padding: 12px;
+}
+
+.purchase-mini-card {
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: linear-gradient(165deg, #ffffff, #f1f9ff 65%, #ecfeff);
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.purchase-mini-eyebrow {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #0369a1;
+  text-transform: uppercase;
+}
+
+.purchase-mini-form {
+  margin-top: 2px;
+  gap: 10px;
 }
 
 .voucher-course-grid {
@@ -1913,13 +1991,10 @@ summary.curriculum-summary::-webkit-details-marker {
   }
 
   .nav-links {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    max-width: 52vw;
-    gap: 10px;
-    scrollbar-width: thin;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
+    flex-wrap: wrap;
+    overflow: visible;
+    max-width: 56vw;
+    gap: 8px;
   }
 
   .auth-actions {
@@ -2098,6 +2173,13 @@ summary.curriculum-summary::-webkit-details-marker {
     max-width: 100%;
     gap: 8px;
     padding-bottom: 4px;
+  }
+
+  .nav-dropdown-menu {
+    left: 0;
+    right: auto;
+    min-width: 180px;
+    max-width: min(260px, 88vw);
   }
 
   .nav-link {

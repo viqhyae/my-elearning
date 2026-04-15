@@ -30,6 +30,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::patch('/me/profile', [ProfileController::class, 'update']);
+    Route::post('/me/avatar', [ProfileController::class, 'uploadAvatar']);
     Route::post('/me/password', [ProfileController::class, 'updatePassword']);
 
     Route::middleware('role:student,mentor,admin')->group(function (): void {

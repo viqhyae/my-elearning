@@ -47,6 +47,26 @@ type CourseDetail = {
   modules: CourseModule[]
 }
 
+type PaymentMethod = 'bank_transfer' | 'ewallet' | 'qris'
+
+type TransactionSummary = {
+  id: number
+  reference: string
+  status: 'pending' | 'paid'
+  payment_method: PaymentMethod
+  final_price_label: string
+}
+
+type CheckoutResponse = {
+  message: string
+  transaction: TransactionSummary
+}
+
+type PayResponse = {
+  message: string
+  transaction: TransactionSummary
+}
+
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiBase = runtimeConfig.public.apiBase
@@ -54,6 +74,7 @@ const auth = useAuth()
 const slug = computed(() => String(route.params.slug || ''))
 
 await auth.ensureSession()
+const headers = computed(() => auth.authHeaders())
 
 const {
   data,
@@ -96,6 +117,89 @@ const checkoutPath = computed(() => {
 
   return `/payments?course=${data.value.id}`
 })
+
+const paymentMethodOptions = [
+  { value: 'qris', label: 'QRIS' },
+  { value: 'ewallet', label: 'E-Wallet' },
+  { value: 'bank_transfer', label: 'Bank Transfer' },
+] as const
+
+const quickBuyForm = reactive({
+  voucher_code: '',
+  payment_method: 'qris' as PaymentMethod,
+})
+
+const quickBuyMessage = ref('')
+const quickBuyError = ref('')
+const buyingNow = ref(false)
+const latestQuickBuyTransaction = ref<TransactionSummary | null>(null)
+
+const extractError = (error: unknown, fallback: string) => {
+  const data = (error as { data?: { message?: string; errors?: Record<string, string[]> } })?.data
+
+  if (data?.errors) {
+    const firstKey = Object.keys(data.errors)[0]
+    const firstMessage = firstKey ? data.errors[firstKey]?.[0] : ''
+
+    if (firstMessage) {
+      return firstMessage
+    }
+  }
+
+  return data?.message || fallback
+}
+
+const buyNow = async () => {
+  if (!data.value) {
+    return
+  }
+
+  if (!auth.isAuthenticated.value) {
+    await navigateTo('/login')
+    return
+  }
+
+  buyingNow.value = true
+  quickBuyError.value = ''
+  quickBuyMessage.value = ''
+
+  let draftTransaction: TransactionSummary | null = null
+
+  try {
+    const checkoutResponse = await $fetch<CheckoutResponse>('/api/student/transactions/checkout', {
+      method: 'POST',
+      baseURL: apiBase,
+      headers: headers.value,
+      body: {
+        course_id: data.value.id,
+        voucher_code: quickBuyForm.voucher_code.trim() || null,
+        payment_method: quickBuyForm.payment_method,
+      },
+    })
+
+    draftTransaction = checkoutResponse.transaction
+
+    const payResponse = await $fetch<PayResponse>(`/api/student/transactions/${draftTransaction.id}/pay`, {
+      method: 'POST',
+      baseURL: apiBase,
+      headers: headers.value,
+    })
+
+    latestQuickBuyTransaction.value = payResponse.transaction
+    quickBuyMessage.value = `${payResponse.message} Kelas langsung aktif untuk akun Anda.`
+    quickBuyForm.voucher_code = ''
+  } catch (error: unknown) {
+    if (draftTransaction) {
+      latestQuickBuyTransaction.value = draftTransaction
+      quickBuyError.value = `${extractError(error, 'Checkout berhasil dibuat, tetapi pembayaran belum selesai.')} Selesaikan dari halaman pembayaran.`
+      return
+    }
+
+    quickBuyError.value = extractError(error, 'Pembelian kelas gagal diproses.')
+  } finally {
+    buyingNow.value = false
+  }
+}
 </script>
 
 <template>
@@ -131,10 +235,8 @@ const checkoutPath = computed(() => {
             <p class="stack-percent">Harga: {{ data.price_label }}</p>
             <p>{{ data.description || 'Deskripsi kursus belum ditambahkan.' }}</p>
             <div class="hero-actions">
-              <NuxtLink v-if="auth.isAuthenticated.value" :to="checkoutPath" class="btn btn-primary">
-                Beli kelas ini
-              </NuxtLink>
-              <NuxtLink v-else to="/login" class="btn btn-primary">Login untuk mulai belajar</NuxtLink>
+              <NuxtLink to="/courses" class="btn btn-secondary">Lihat course lain</NuxtLink>
+              <NuxtLink :to="checkoutPath" class="btn btn-secondary">Halaman pembayaran</NuxtLink>
             </div>
           </article>
 
@@ -155,6 +257,55 @@ const checkoutPath = computed(() => {
             <div class="tag-list">
               <span v-for="tool in data.tools" :key="tool" class="tag">{{ tool }}</span>
               <p v-if="!data.tools.length" class="status-meta">Belum ada tools yang ditentukan.</p>
+            </div>
+
+            <div class="purchase-mini-card section-spacer-sm">
+              <p class="purchase-mini-eyebrow">Beli Langsung</p>
+              <p class="stack-title">{{ data.title }}</p>
+              <p class="stack-percent">{{ data.price_label }}</p>
+              <p class="stack-meta">
+                Tanpa keranjang: klik beli, sistem langsung membuat transaksi lalu memproses pembayaran.
+              </p>
+
+              <template v-if="auth.isAuthenticated.value">
+                <div class="form-grid purchase-mini-form">
+                  <label class="form-field form-field-full">
+                    <span>Kode Voucher (opsional)</span>
+                    <input
+                      v-model="quickBuyForm.voucher_code"
+                      type="text"
+                      placeholder="Contoh: HEMAT50K"
+                    />
+                  </label>
+                  <label class="form-field form-field-full">
+                    <span>Metode Bayar</span>
+                    <select v-model="quickBuyForm.payment_method">
+                      <option v-for="method in paymentMethodOptions" :key="method.value" :value="method.value">
+                        {{ method.label }}
+                      </option>
+                    </select>
+                  </label>
+                </div>
+
+                <p v-if="quickBuyError" class="status-meta status-error">{{ quickBuyError }}</p>
+                <p v-if="quickBuyMessage" class="status-meta">{{ quickBuyMessage }}</p>
+                <p v-if="latestQuickBuyTransaction" class="status-meta">
+                  Ref transaksi: {{ latestQuickBuyTransaction.reference }} ({{ latestQuickBuyTransaction.final_price_label }})
+                </p>
+
+                <div class="form-actions">
+                  <button type="button" class="btn btn-primary" :disabled="buyingNow" @click="buyNow()">
+                    {{ buyingNow ? 'Memproses pembelian...' : 'Beli Kelas Sekarang' }}
+                  </button>
+                  <NuxtLink :to="checkoutPath" class="btn btn-secondary">Lanjut di halaman pembayaran</NuxtLink>
+                </div>
+              </template>
+
+              <template v-else>
+                <div class="form-actions">
+                  <NuxtLink to="/login" class="btn btn-primary">Login untuk beli kelas</NuxtLink>
+                </div>
+              </template>
             </div>
           </article>
         </div>
