@@ -147,21 +147,33 @@ const stars = (value: number) => {
             <p class="status-meta">{{ data.modules.length }} modul • {{ totalLessons }} lesson</p>
           </div>
           <div class="stack-list">
-            <details v-for="module in data.modules" :key="module.id" class="curriculum-item">
-              <summary>
-                <span>{{ module.order_no }}. {{ module.title }}</span>
-                <span class="status-meta">{{ module.lessons.length }} lesson</span>
+            <details v-for="module in data.modules" :key="module.id" class="curriculum-item curriculum-module">
+              <summary class="curriculum-summary">
+                <span class="curriculum-heading">
+                  <span class="curriculum-caret" aria-hidden="true" />
+                  <span class="stack-title">{{ module.order_no }}. {{ module.title }}</span>
+                </span>
+                <span class="curriculum-pill">{{ module.lessons.length }} lesson</span>
               </summary>
-              <p class="stack-meta">{{ module.description || 'Deskripsi modul belum ditambahkan.' }}</p>
-              <div class="stack-list">
-                <div v-for="lesson in module.lessons" :key="lesson.id" class="stack-row">
-                  <p class="stack-title">{{ lesson.order_no }}. {{ lesson.title }}</p>
-                  <p class="stack-meta">{{ lesson.description || 'Materi lesson belum diisi.' }}</p>
-                  <p class="stack-meta">
-                    Durasi: {{ lesson.duration_minutes ? `${lesson.duration_minutes} menit` : '-' }}
-                  </p>
-                  <p class="stack-meta">Topik: {{ lesson.topics.join(', ') || '-' }}</p>
-                  <p class="stack-meta">Tools: {{ lesson.tools.join(', ') || '-' }}</p>
+              <div class="curriculum-panel">
+                <div class="curriculum-panel-inner">
+                  <p class="stack-meta">{{ module.description || 'Deskripsi modul belum ditambahkan.' }}</p>
+                  <div class="stack-list section-spacer-sm">
+                    <div v-for="lesson in module.lessons" :key="lesson.id" class="curriculum-item curriculum-lesson">
+                      <div class="curriculum-panel-inner">
+                        <p class="stack-title">{{ lesson.order_no }}. {{ lesson.title }}</p>
+                        <p class="stack-meta">{{ lesson.description || 'Materi lesson belum diisi.' }}</p>
+                        <p class="stack-meta">
+                          Durasi: {{ lesson.duration_minutes ? `${lesson.duration_minutes} menit` : '-' }}
+                        </p>
+                        <p class="stack-meta">Topik: {{ lesson.topics.join(', ') || '-' }}</p>
+                        <p class="stack-meta">Tools: {{ lesson.tools.join(', ') || '-' }}</p>
+                      </div>
+                    </div>
+                    <p v-if="!module.lessons.length" class="empty-state">
+                      Belum ada lesson pada modul ini.
+                    </p>
+                  </div>
                 </div>
               </div>
             </details>
@@ -183,4 +195,3 @@ const stars = (value: number) => {
     </div>
   </section>
 </template>
-

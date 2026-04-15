@@ -139,6 +139,9 @@ const lessonForm = reactive({
   is_published: true,
 })
 
+const activeModuleId = ref<number | null>(null)
+const activeLessonByModule = ref<Record<number, number | null>>({})
+
 const summaryCards = computed(() => [
   { label: 'Course Diampu', value: dashboardData.value.summary.total_courses },
   { label: 'Published', value: dashboardData.value.summary.published_courses },
@@ -218,6 +221,101 @@ watch(
   },
   { immediate: true }
 )
+
+watch(
+  () => courseDetail.value?.modules,
+  (modules) => {
+    if (!modules?.length) {
+      activeModuleId.value = null
+      activeLessonByModule.value = {}
+      return
+    }
+
+    if (!modules.some((module) => module.id === activeModuleId.value)) {
+      activeModuleId.value = modules[0].id
+    }
+
+    const nextLessonState: Record<number, number | null> = {}
+
+    for (const module of modules) {
+      const selectedLessonId = activeLessonByModule.value[module.id] ?? null
+
+      if (selectedLessonId && module.lessons.some((lesson) => lesson.id === selectedLessonId)) {
+        nextLessonState[module.id] = selectedLessonId
+      } else {
+        nextLessonState[module.id] = module.lessons[0]?.id ?? null
+      }
+    }
+
+    activeLessonByModule.value = nextLessonState
+  },
+  { immediate: true }
+)
+
+const isModuleOpen = (moduleId: number) => activeModuleId.value === moduleId
+
+const isLessonOpen = (moduleId: number, lessonId: number) => activeLessonByModule.value[moduleId] === lessonId
+
+const toggleModule = (module: MentorModule) => {
+  if (activeModuleId.value === module.id) {
+    activeModuleId.value = null
+    return
+  }
+
+  activeModuleId.value = module.id
+
+  if (!module.lessons.length) {
+    activeLessonByModule.value[module.id] = null
+    return
+  }
+
+  const selectedLessonId = activeLessonByModule.value[module.id] ?? null
+  if (!module.lessons.some((lesson) => lesson.id === selectedLessonId)) {
+    activeLessonByModule.value[module.id] = module.lessons[0].id
+  }
+}
+
+const toggleLesson = (module: MentorModule, lesson: MentorLesson) => {
+  const activeLessonId = activeLessonByModule.value[module.id] ?? null
+  activeLessonByModule.value[module.id] = activeLessonId === lesson.id ? null : lesson.id
+}
+
+const onAccordionBeforeEnter = (el: Element) => {
+  const element = el as HTMLElement
+  element.style.height = '0'
+  element.style.opacity = '0'
+}
+
+const onAccordionEnter = (el: Element) => {
+  const element = el as HTMLElement
+  element.style.height = `${element.scrollHeight}px`
+  element.style.opacity = '1'
+}
+
+const onAccordionAfterEnter = (el: Element) => {
+  const element = el as HTMLElement
+  element.style.height = 'auto'
+  element.style.opacity = '1'
+}
+
+const onAccordionBeforeLeave = (el: Element) => {
+  const element = el as HTMLElement
+  element.style.height = `${element.scrollHeight}px`
+  element.style.opacity = '1'
+}
+
+const onAccordionLeave = (el: Element) => {
+  const element = el as HTMLElement
+  void element.offsetHeight
+  element.style.height = '0'
+  element.style.opacity = '0'
+}
+
+const onAccordionAfterLeave = (el: Element) => {
+  const element = el as HTMLElement
+  element.style.height = ''
+  element.style.opacity = ''
+}
 
 const onChangeCourse = async () => {
   actionMessage.value = ''
@@ -704,42 +802,110 @@ const formatDateTime = (value: string | null) =>
           <article class="panel-card section-spacer">
             <h2>Daftar Kurikulum</h2>
             <div class="stack-list">
-              <div v-for="module in courseDetail.modules" :key="module.id" class="stack-row">
-                <div class="split-row">
-                  <p class="stack-title">{{ module.order_no }}. {{ module.title }}</p>
+              <div
+                v-for="module in courseDetail.modules"
+                :key="module.id"
+                class="curriculum-item curriculum-module"
+                :class="{ 'is-open': isModuleOpen(module.id) }"
+              >
+                <div class="curriculum-summary">
+                  <button
+                    type="button"
+                    class="curriculum-toggle"
+                    :class="{ 'is-open': isModuleOpen(module.id) }"
+                    @click="toggleModule(module)"
+                  >
+                    <span class="curriculum-heading">
+                      <span class="curriculum-caret" aria-hidden="true" />
+                      <span class="stack-title">{{ module.order_no }}. {{ module.title }}</span>
+                    </span>
+                    <span class="curriculum-pill">{{ module.lessons.length }} lesson</span>
+                  </button>
                   <div class="table-actions">
-                    <button type="button" class="btn btn-secondary btn-small" @click="editModule(module)">
+                    <button type="button" class="btn btn-secondary btn-small" @click.stop="editModule(module)">
                       Edit Modul
                     </button>
-                    <button type="button" class="btn btn-danger btn-small" @click="removeModule(module)">
+                    <button type="button" class="btn btn-danger btn-small" @click.stop="removeModule(module)">
                       Hapus Modul
                     </button>
                   </div>
                 </div>
-                <p class="stack-meta">{{ module.description || 'Deskripsi modul belum diisi.' }}</p>
-                <p class="stack-meta">
-                  Status: <strong>{{ module.is_published ? 'Published' : 'Draft' }}</strong>
-                </p>
 
-                <div class="stack-list section-spacer-sm">
-                  <div v-for="lesson in module.lessons" :key="lesson.id" class="stack-row">
-                    <div class="split-row">
-                      <p class="stack-title">{{ lesson.order_no }}. {{ lesson.title }}</p>
-                      <div class="table-actions">
-                        <button type="button" class="btn btn-secondary btn-small" @click="editLesson(lesson)">
-                          Edit Lesson
-                        </button>
-                        <button type="button" class="btn btn-danger btn-small" @click="removeLesson(lesson)">
-                          Hapus Lesson
-                        </button>
+                <Transition
+                  name="accordion-slide"
+                  @before-enter="onAccordionBeforeEnter"
+                  @enter="onAccordionEnter"
+                  @after-enter="onAccordionAfterEnter"
+                  @before-leave="onAccordionBeforeLeave"
+                  @leave="onAccordionLeave"
+                  @after-leave="onAccordionAfterLeave"
+                >
+                  <div v-if="isModuleOpen(module.id)" class="curriculum-panel">
+                    <div class="curriculum-panel-inner">
+                      <p class="stack-meta">{{ module.description || 'Deskripsi modul belum diisi.' }}</p>
+                      <p class="stack-meta">
+                        Status: <strong>{{ module.is_published ? 'Published' : 'Draft' }}</strong>
+                      </p>
+
+                      <div class="stack-list section-spacer-sm">
+                        <div
+                          v-for="lesson in module.lessons"
+                          :key="lesson.id"
+                          class="curriculum-item curriculum-lesson"
+                          :class="{ 'is-open': isLessonOpen(module.id, lesson.id) }"
+                        >
+                          <div class="curriculum-summary">
+                            <button
+                              type="button"
+                              class="curriculum-toggle curriculum-toggle-lesson"
+                              :class="{ 'is-open': isLessonOpen(module.id, lesson.id) }"
+                              @click="toggleLesson(module, lesson)"
+                            >
+                              <span class="curriculum-heading">
+                                <span class="curriculum-caret" aria-hidden="true" />
+                                <span class="stack-title">{{ lesson.order_no }}. {{ lesson.title }}</span>
+                              </span>
+                              <span class="curriculum-pill curriculum-pill-soft">
+                                {{ lesson.duration_minutes ? `${lesson.duration_minutes} menit` : 'Durasi -' }}
+                              </span>
+                            </button>
+                            <div class="table-actions">
+                              <button type="button" class="btn btn-secondary btn-small" @click.stop="editLesson(lesson)">
+                                Edit Lesson
+                              </button>
+                              <button type="button" class="btn btn-danger btn-small" @click.stop="removeLesson(lesson)">
+                                Hapus Lesson
+                              </button>
+                            </div>
+                          </div>
+
+                          <Transition
+                            name="accordion-slide"
+                            @before-enter="onAccordionBeforeEnter"
+                            @enter="onAccordionEnter"
+                            @after-enter="onAccordionAfterEnter"
+                            @before-leave="onAccordionBeforeLeave"
+                            @leave="onAccordionLeave"
+                            @after-leave="onAccordionAfterLeave"
+                          >
+                            <div v-if="isLessonOpen(module.id, lesson.id)" class="curriculum-panel">
+                              <div class="curriculum-panel-inner">
+                                <p class="stack-meta">{{ lesson.description || 'Deskripsi lesson belum diisi.' }}</p>
+                                <p class="stack-meta">Topik: {{ lesson.topics.join(', ') || '-' }}</p>
+                                <p class="stack-meta">Tools: {{ lesson.tools.join(', ') || '-' }}</p>
+                                <p class="stack-meta">Video: {{ lesson.video_url || '-' }}</p>
+                              </div>
+                            </div>
+                          </Transition>
+                        </div>
+
+                        <p v-if="!module.lessons.length" class="empty-state">
+                          Belum ada lesson pada modul ini.
+                        </p>
                       </div>
                     </div>
-                    <p class="stack-meta">{{ lesson.description || 'Deskripsi lesson belum diisi.' }}</p>
-                    <p class="stack-meta">Topik: {{ lesson.topics.join(', ') || '-' }}</p>
-                    <p class="stack-meta">Tools: {{ lesson.tools.join(', ') || '-' }}</p>
-                    <p class="stack-meta">Video: {{ lesson.video_url || '-' }}</p>
                   </div>
-                </div>
+                </Transition>
               </div>
 
               <p v-if="!courseDetail.modules.length" class="status-meta">
