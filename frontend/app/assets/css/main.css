@@ -331,29 +331,37 @@ video {
 
 .mode-grid {
   display: grid;
-  gap: 14px;
+  gap: 18px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 0 0 18px;
+  align-items: stretch;
 }
 
 .mode-card {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   position: relative;
   overflow: hidden;
   padding: 16px;
-  border-radius: 14px;
+  border-radius: 16px;
   border: 1px solid #bae6fd;
-  background: linear-gradient(160deg, #ffffff, #ecfeff);
+  background: linear-gradient(160deg, #ffffff, #f1fbff);
   box-shadow: 0 8px 18px rgba(2, 132, 199, 0.08);
   transition: transform 0.24s ease, box-shadow 0.24s ease;
 }
 
 .mode-card .stack-title {
   margin: 0;
+  font-family: 'Sora', sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.35;
 }
 
 .mode-card .stack-meta {
-  margin-top: 8px;
+  margin: 8px 0 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
 }
 
 .mode-card::before {
@@ -371,15 +379,25 @@ video {
   box-shadow: 0 16px 28px rgba(2, 132, 199, 0.15);
 }
 
+.mode-card:focus-visible {
+  outline: 0;
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.2),
+    0 16px 28px rgba(2, 132, 199, 0.15);
+}
+
 .mode-card:hover::before {
   transform: translateX(260%);
 }
 
 .mode-thumb {
   width: 100%;
-  border-radius: 10px;
-  margin-bottom: 10px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 14px;
   border: 1px solid #bfdbfe;
+  background: #e2f3ff;
 }
 
 .feature-card {
