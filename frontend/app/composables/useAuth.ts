@@ -81,17 +81,16 @@ export const useAuth = () => {
     persistSession()
   }
 
-  const authHeaders = () => {
-    if (!token.value) {
-      return {
-        Accept: 'application/json',
-      }
+  const authHeaders = (): Record<string, string> => {
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
     }
 
-    return {
-      Accept: 'application/json',
-      Authorization: `Bearer ${token.value}`,
+    if (token.value) {
+      headers.Authorization = `Bearer ${token.value}`
     }
+
+    return headers
   }
 
   const login = async (email: string, password: string) => {

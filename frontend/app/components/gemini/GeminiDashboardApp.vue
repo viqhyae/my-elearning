@@ -20,6 +20,9 @@ const {
   adminStats,
   recentRegistrations,
   instructorCourses,
+  notifications,
+  studentOverview,
+  instructorOverview,
   isModalOpen,
   modalType,
   toast,
@@ -27,7 +30,331 @@ const {
   closeModal,
   showToast,
   submitModal,
+  loadDashboardPayload,
 } = useGeminiDashboardState()
+
+const auth = useAuth()
+const router = useRouter()
+const runtimeConfig = useRuntimeConfig()
+const apiBase = runtimeConfig.public.apiBase
+
+const authResolved = ref(false)
+const isNotificationPanelOpen = ref(false)
+const isSubmittingPasswordChange = ref(false)
+const passwordNotice = ref('')
+const instructorPassword = ref({
+  current: '',
+  next: '',
+  confirm: '',
+})
+
+type StudentLearningCourse = {
+  title: string
+  slug: string
+  category: string
+  level: string
+  mentor: string
+  image: string
+  progress: number
+  status: 'active' | 'completed'
+  nextLesson: string
+}
+
+type StudentCatalogCourse = {
+  title: string
+  slug: string
+  category: string
+  level: string
+  mentor: string
+  rating: string
+  image: string
+  accessLabel: string
+}
+
+type StudentCertificate = {
+  id: string
+  status: 'issued' | 'in_progress'
+  track: string
+  courseTitle: string
+  courseSlug: string
+  image: string
+  completedAt: string
+  issuedAt: string
+  credentialId: string
+  remainingModules?: number
+  progressPercent?: number
+}
+
+const studentActiveCourses = ref<StudentLearningCourse[]>([
+  {
+    title: 'Fullstack Web: Nuxt 4 & Laravel 13 API Enterprise',
+    slug: 'fullstack-web-nuxt-4-laravel-13-api-enterprise',
+    category: 'Web Development',
+    level: 'Menengah',
+    mentor: 'Budi Santoso',
+    image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&q=80',
+    progress: 65,
+    status: 'active',
+    nextLesson: 'Episode 12: Role-based Authorization',
+  },
+  {
+    title: 'Mastering PostgreSQL 17 & Redis 7 Caching',
+    slug: 'mastering-postgresql-17-redis-7-caching',
+    category: 'Backend & Database',
+    level: 'Lanjutan',
+    mentor: 'Budi Santoso',
+    image: 'https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=800&q=80',
+    progress: 48,
+    status: 'active',
+    nextLesson: 'Episode 08: Query Plan & Index Strategy',
+  },
+  {
+    title: 'Docker Compose & Nginx Reverse Proxy Setup',
+    slug: 'docker-compose-nginx-reverse-proxy-setup',
+    category: 'DevOps & Cloud',
+    level: 'Menengah',
+    mentor: 'Budi Santoso',
+    image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&q=80',
+    progress: 32,
+    status: 'active',
+    nextLesson: 'Episode 05: Multi-stage Build Production',
+  },
+  {
+    title: 'Dasar Pemrograman Web: HTML, CSS & JS',
+    slug: 'dasar-pemrograman-web-html-css-js',
+    category: 'Web Development',
+    level: 'Pemula',
+    mentor: 'Rina Melati',
+    image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&q=80',
+    progress: 100,
+    status: 'completed',
+    nextLesson: 'Kelas selesai. Sertifikat siap diunduh.',
+  },
+])
+
+const studentCatalogCourses = ref<StudentCatalogCourse[]>([
+  {
+    title: 'Mastering PostgreSQL 17 & Redis 7 Caching',
+    slug: 'mastering-postgresql-17-redis-7-caching',
+    category: 'Backend & Database',
+    level: 'Lanjutan',
+    mentor: 'Budi Santoso',
+    rating: '4.8',
+    image: 'https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=800&q=80',
+    accessLabel: 'Akses Kelas',
+  },
+  {
+    title: 'Docker Compose & Nginx Reverse Proxy Setup',
+    slug: 'docker-compose-nginx-reverse-proxy-setup',
+    category: 'DevOps & Cloud',
+    level: 'Menengah',
+    mentor: 'Fajar Nugraha',
+    rating: '5.0',
+    image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&q=80',
+    accessLabel: 'Lanjutkan Belajar',
+  },
+  {
+    title: 'UI/UX Design System untuk Aplikasi SaaS',
+    slug: 'ui-ux-design-system-untuk-aplikasi-saas',
+    category: 'UI/UX Design',
+    level: 'Pemula',
+    mentor: 'Sarah Wijaya',
+    rating: '4.9',
+    image: 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?w=800&q=80',
+    accessLabel: 'Masuk Kelas',
+  },
+  {
+    title: 'Belajar Fundamental Python Data Science',
+    slug: 'belajar-fundamental-python-data-science',
+    category: 'Data Science',
+    level: 'Pemula',
+    mentor: 'Andi Kusuma',
+    rating: '4.7',
+    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80',
+    accessLabel: 'Akses Materi',
+  },
+])
+
+const certificateRecords = computed<StudentCertificate[]>(() => {
+  const learnerName = currentUser.value.name || 'Andi Kusuma'
+
+  return [
+    {
+      id: 'cert-html-css-js',
+      status: 'issued',
+      track: 'Web Development',
+      courseTitle: 'Dasar Pemrograman Web: HTML, CSS & JS',
+      courseSlug: 'dasar-pemrograman-web-html-css-js',
+      image: 'https://images.unsplash.com/photo-1523800503107-5bc3ba2a6f81?q=80&w=600',
+      completedAt: '2026-04-12',
+      issuedAt: '2026-04-13',
+      credentialId: `EDT-${learnerName.replace(/\s+/g, '').toUpperCase().slice(0, 4)}-X89J`,
+    },
+    {
+      id: 'cert-fullstack',
+      status: 'in_progress',
+      track: 'Web Development',
+      courseTitle: 'Fullstack Web: Nuxt 4 & Laravel 13',
+      courseSlug: 'fullstack-web-nuxt-4-laravel-13-api-enterprise',
+      image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&q=80',
+      completedAt: '',
+      issuedAt: '',
+      credentialId: '',
+      remainingModules: 4,
+      progressPercent: 65,
+    },
+  ]
+})
+
+const issuedCertificates = computed(() =>
+  certificateRecords.value.filter((item) => item.status === 'issued')
+)
+
+const toSlug = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+const resolveCourseSlug = (course: { slug?: string; title?: string }) => {
+  if (typeof course.slug === 'string' && course.slug.trim().length > 0) {
+    return toSlug(course.slug)
+  }
+
+  if (typeof course.title === 'string' && course.title.trim().length > 0) {
+    return toSlug(course.title)
+  }
+
+  return ''
+}
+
+const formatDateLabel = (value: string) => {
+  if (!value) {
+    return '-'
+  }
+
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat('id-ID', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(parsed)
+}
+
+const escapeHtml = (value: string) =>
+  value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+
+const openCourseFromDashboard = async (
+  course: { slug?: string; title?: string },
+  source: 'mentor' | 'student' | 'catalog'
+) => {
+  const slug = resolveCourseSlug(course)
+
+  if (!slug) {
+    showToast('Kelas ini belum memiliki slug. Silakan lengkapi data kelas.', 'info')
+    return
+  }
+
+  if (source === 'mentor') {
+    showToast('Membuka halaman kelas untuk dikelola...', 'info')
+  }
+
+  await router.push({
+    path: `/courses/${encodeURIComponent(slug)}`,
+    query: source === 'mentor' ? { mode: 'manage' } : { from: 'dashboard' },
+  })
+}
+
+const downloadCertificate = (certificate: StudentCertificate) => {
+  if (certificate.status !== 'issued') {
+    showToast('Sertifikat belum tersedia. Selesaikan seluruh modul terlebih dahulu.', 'info')
+    return
+  }
+
+  const learnerName = currentUser.value.name || 'Andi Kusuma'
+  const completedAt = formatDateLabel(certificate.completedAt)
+  const issuedAt = formatDateLabel(certificate.issuedAt)
+  const safeCourseTitle = escapeHtml(certificate.courseTitle)
+  const safeLearnerName = escapeHtml(learnerName)
+  const safeCredential = escapeHtml(certificate.credentialId)
+
+  const certificateHtml = `<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sertifikat - ${safeLearnerName}</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; background: #f8fafc; padding: 28px; color: #0f172a; }
+    .certificate { max-width: 980px; margin: 0 auto; background: white; border: 2px solid #1d4ed8; border-radius: 20px; padding: 44px; }
+    .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 26px; }
+    .brand { font-size: 30px; font-weight: 800; letter-spacing: -0.5px; color: #1e3a8a; }
+    .badge { font-size: 11px; font-weight: 700; color: #1d4ed8; border: 1px solid #bfdbfe; background: #eff6ff; padding: 8px 12px; border-radius: 999px; }
+    .title { text-align: center; font-size: 42px; font-weight: 800; margin: 8px 0 14px; letter-spacing: -0.7px; }
+    .subtitle { text-align: center; color: #334155; margin-bottom: 24px; font-size: 15px; }
+    .name { text-align: center; font-size: 32px; font-weight: 800; color: #1d4ed8; margin: 14px 0 8px; }
+    .course { text-align: center; font-size: 24px; font-weight: 700; margin-bottom: 28px; }
+    .meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 24px; }
+    .meta-card { border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px 14px; background: #f8fafc; }
+    .meta-label { font-size: 11px; color: #475569; font-weight: 700; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .meta-value { font-size: 14px; font-weight: 700; color: #0f172a; }
+    .footer { margin-top: 28px; border-top: 1px solid #e2e8f0; padding-top: 18px; display: flex; justify-content: space-between; color: #475569; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="certificate">
+    <div class="top">
+      <div class="brand">Segara Digital Certificate</div>
+      <div class="badge">Verified Digital Credential</div>
+    </div>
+    <div class="title">Sertifikat Kelulusan</div>
+    <div class="subtitle">Dengan ini menyatakan bahwa</div>
+    <div class="name">${safeLearnerName}</div>
+    <div class="subtitle">telah menyelesaikan kelas</div>
+    <div class="course">${safeCourseTitle}</div>
+    <div class="meta">
+      <div class="meta-card">
+        <div class="meta-label">Nama Murid</div>
+        <div class="meta-value">${safeLearnerName}</div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-label">Selesai Pada</div>
+        <div class="meta-value">${escapeHtml(completedAt)}</div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-label">Credential ID</div>
+        <div class="meta-value">${safeCredential}</div>
+      </div>
+    </div>
+    <div class="footer">
+      <div>Diterbitkan: ${escapeHtml(issuedAt)}</div>
+      <div>Segara Digital Learning Platform</div>
+    </div>
+  </div>
+</body>
+</html>`
+
+  const blob = new Blob([certificateHtml], { type: 'text/html;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `sertifikat-${resolveCourseSlug({ slug: certificate.courseSlug || certificate.courseTitle })}-${toSlug(
+    learnerName
+  )}.html`
+  link.click()
+  URL.revokeObjectURL(url)
+
+  showToast('Sertifikat personal berhasil diunduh.', 'success')
+}
 
 const mapRole = (value: string) => {
   if (value === 'mentor') {
@@ -74,11 +401,176 @@ const normalizeMenuForRole = (roleName: string, requestedMenu: string) => {
   return 'dashboard'
 }
 
-onMounted(() => {
-  const normalizedRole = mapRole(props.initialRole || 'admin')
+const getErrorMessage = (error: unknown, fallback: string) => {
+  const maybeError = error as {
+    message?: string
+    data?: {
+      message?: string
+      errors?: Record<string, string[] | string>
+    }
+  }
+
+  if (typeof maybeError?.data?.message === 'string' && maybeError.data.message.trim().length > 0) {
+    return maybeError.data.message
+  }
+
+  if (maybeError?.data?.errors && typeof maybeError.data.errors === 'object') {
+    for (const value of Object.values(maybeError.data.errors)) {
+      if (Array.isArray(value) && typeof value[0] === 'string' && value[0].trim().length > 0) {
+        return value[0]
+      }
+      if (typeof value === 'string' && value.trim().length > 0) {
+        return value
+      }
+    }
+  }
+
+  if (typeof maybeError?.message === 'string' && maybeError.message.trim().length > 0) {
+    return maybeError.message
+  }
+
+  return fallback
+}
+
+const showRoleSwitcher = computed(() => authResolved.value && !auth.isAuthenticated.value)
+
+const notificationToneClass = (tone: string) => {
+  if (tone === 'success') {
+    return 'bg-emerald-50 text-emerald-700 border-emerald-100'
+  }
+  if (tone === 'warning') {
+    return 'bg-amber-50 text-amber-700 border-amber-100'
+  }
+  return 'bg-blue-50 text-blue-700 border-blue-100'
+}
+
+const activeOverview = computed(() =>
+  role.value === 'instructor' ? instructorOverview.value : studentOverview.value
+)
+
+const sortedOverviewDistribution = computed(() =>
+  [...activeOverview.value.roleDistribution].sort((left, right) => right.percent - left.percent)
+)
+
+const overviewChartStyle = computed(() => {
+  const distribution = activeOverview.value.roleDistribution
+
+  if (!Array.isArray(distribution) || distribution.length === 0) {
+    return { background: '#e2e8f0' }
+  }
+
+  let start = 0
+  const segments = distribution
+    .filter((item) => Number(item.percent) > 0)
+    .map((item) => {
+      const end = Math.min(100, start + Number(item.percent))
+      const segment = `${item.color} ${start}% ${end}%`
+      start = end
+      return segment
+    })
+
+  if (start < 100) {
+    segments.push(`#e2e8f0 ${start}% 100%`)
+  }
+
+  return {
+    background: `conic-gradient(${segments.join(', ')})`,
+  }
+})
+
+const closeNotificationPanel = () => {
+  isNotificationPanelOpen.value = false
+}
+
+const toggleNotificationPanel = () => {
+  isNotificationPanelOpen.value = !isNotificationPanelOpen.value
+}
+
+const handleDashboardLogout = async () => {
+  if (!auth.isAuthenticated.value) {
+    showToast('Mode demo aktif. Login dulu untuk keluar sesi akun.', 'info')
+    return
+  }
+
+  await auth.logout()
+  closeNotificationPanel()
+  showToast('Anda berhasil keluar dari sistem.', 'info')
+  await router.push('/login')
+}
+
+const submitInstructorPasswordChange = async () => {
+  passwordNotice.value = ''
+
+  if (!auth.isAuthenticated.value) {
+    passwordNotice.value = 'Silakan login terlebih dahulu.'
+    return
+  }
+
+  if (!instructorPassword.value.current || !instructorPassword.value.next || !instructorPassword.value.confirm) {
+    passwordNotice.value = 'Lengkapi semua kolom password.'
+    return
+  }
+
+  if (instructorPassword.value.next.length < 8) {
+    passwordNotice.value = 'Password baru minimal 8 karakter.'
+    return
+  }
+
+  if (instructorPassword.value.next !== instructorPassword.value.confirm) {
+    passwordNotice.value = 'Konfirmasi password tidak sesuai.'
+    return
+  }
+
+  isSubmittingPasswordChange.value = true
+
+  try {
+    await $fetch('/api/me/password', {
+      method: 'POST',
+      baseURL: apiBase,
+      headers: auth.authHeaders(),
+      body: {
+        current_password: instructorPassword.value.current,
+        password: instructorPassword.value.next,
+        password_confirmation: instructorPassword.value.confirm,
+      },
+    })
+
+    showToast('Password berhasil diubah. Silakan login ulang.', 'success')
+    instructorPassword.value = { current: '', next: '', confirm: '' }
+    await auth.logout()
+    await router.push('/login')
+  } catch (error) {
+    passwordNotice.value = getErrorMessage(error, 'Gagal mengubah password.')
+  } finally {
+    isSubmittingPasswordChange.value = false
+  }
+}
+
+onMounted(async () => {
+  await auth.ensureSession()
+  authResolved.value = true
+
+  const normalizedRole = auth.user.value?.role
+    ? mapRole(auth.user.value.role)
+    : mapRole(props.initialRole || 'admin')
+
   role.value = normalizedRole
   currentMenu.value = normalizeMenuForRole(normalizedRole, props.initialMenu || 'dashboard')
+  await loadDashboardPayload()
 })
+
+watch(
+  () => auth.user.value?.role,
+  (value) => {
+    if (!value) {
+      return
+    }
+
+    const normalizedRole = mapRole(value)
+    role.value = normalizedRole
+    currentMenu.value = normalizeMenuForRole(normalizedRole, currentMenu.value)
+  }
+)
 
 watch(
   () => activeMenus.value,
@@ -102,10 +594,12 @@ watch(
     <aside :class="isSidebarOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed lg:static inset-y-0 left-0 z-50 w-[280px] bg-white border-r border-slate-200 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 shadow-2xl lg:shadow-none">
         
         <div class="h-20 flex items-center px-8 border-b border-slate-100 shrink-0">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary-600 to-blue-500 flex items-center justify-center text-white mr-3 shadow-md shadow-primary-500/30">
-                <i class="ph-bold ph-code text-xl"></i>
-            </div>
-            <span class="font-extrabold text-xl tracking-tight text-slate-900">EduTech.</span>
+            <img
+              src="/images/logo-segara-digital.png"
+              alt="Logo Segara Digital"
+              class="w-10 h-10 object-contain mr-3 drop-shadow-sm"
+            >
+            <span class="font-extrabold text-xl tracking-tight text-slate-900">Segara Digital.</span>
         </div>
 
         <div class="p-6 border-b border-slate-100 bg-slate-50/50">
@@ -138,8 +632,8 @@ watch(
         </div>
 
         <div class="p-6 border-t border-slate-100 shrink-0">
-            <button @click="showToast('Anda berhasil keluar dari sistem.', 'info')" class="w-full flex items-center justify-center px-4 py-3 bg-white border border-slate-200 text-slate-600 hover:text-red-600 hover:bg-red-50 hover:border-red-100 rounded-2xl font-bold text-sm transition-all group shadow-sm">
-                <i class="ph-bold ph-sign-out text-lg mr-2 group-hover:text-red-500"></i> Keluar Dasbor
+            <button @click="handleDashboardLogout" class="w-full flex items-center justify-center px-4 py-3 bg-gradient-to-r from-rose-500 to-red-500 text-white hover:from-rose-600 hover:to-red-600 rounded-2xl font-bold text-sm transition-all group shadow-md shadow-red-500/30 active:scale-95">
+                <i class="ph-bold ph-sign-out text-lg mr-2"></i> Keluar Dasbor
             </button>
         </div>
     </aside>
@@ -156,24 +650,48 @@ watch(
                 </button>
                 <div class="hidden sm:block animate-fade-in">
                     <h2 class="text-xl font-black text-slate-900 leading-tight">{{ currentMenuLabel }}</h2>
-                    <p class="text-xs font-medium text-slate-500">EduTech Dashboard v2.0</p>
+                    <p class="text-xs font-medium text-slate-500">Segara Digital Dashboard v2.0</p>
                 </div>
             </div>
 
             <div class="flex items-center space-x-3 md:space-x-5">
-                <div class="flex items-center bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+                <div v-if="showRoleSwitcher" class="flex items-center bg-slate-100 p-1.5 rounded-xl border border-slate-200">
                     <span class="hidden md:inline-block text-[10px] font-bold text-slate-400 uppercase tracking-widest mx-3">Uji Coba Role:</span>
                     <button @click="role = 'admin'; currentMenu = 'dashboard'" :class="role === 'admin' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'" class="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold transition-all">Admin</button>
                     <button @click="role = 'instructor'; currentMenu = 'dashboard'" :class="role === 'instructor' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'" class="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold transition-all">Instruktur</button>
                     <button @click="role = 'student'; currentMenu = 'dashboard'" :class="role === 'student' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'" class="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold transition-all">Siswa</button>
                 </div>
 
-                <div class="w-px h-8 bg-slate-200 hidden md:block"></div>
+                <div v-if="showRoleSwitcher" class="w-px h-8 bg-slate-200 hidden md:block"></div>
 
-                <button class="relative w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-primary-600 hover:border-primary-200 hover:bg-primary-50 transition-all shadow-sm shrink-0">
-                    <i class="ph-duotone ph-bell text-xl"></i>
-                    <span class="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-                </button>
+                <div class="relative">
+                    <button @click="toggleNotificationPanel" class="relative w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-primary-600 hover:border-primary-200 hover:bg-primary-50 transition-all shadow-sm shrink-0">
+                        <i class="ph-duotone ph-bell text-xl"></i>
+                        <span v-if="notifications.length > 0" class="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                    </button>
+
+                    <transition name="modal">
+                        <div v-if="isNotificationPanelOpen" class="absolute right-0 top-12 w-[320px] bg-white rounded-2xl border border-slate-200 shadow-2xl p-4 z-50">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="text-sm font-black text-slate-900">Notifikasi</h4>
+                                <button @click="closeNotificationPanel" class="w-7 h-7 rounded-lg border border-slate-200 text-slate-500 hover:text-red-600 hover:border-red-100 hover:bg-red-50 transition">
+                                    <i class="ph-bold ph-x text-sm"></i>
+                                </button>
+                            </div>
+
+                            <div v-if="notifications.length > 0" class="space-y-2 max-h-80 overflow-y-auto pr-1">
+                                <div v-for="item in notifications" :key="item.id" class="rounded-xl border p-3" :class="notificationToneClass(item.tone)">
+                                    <p class="text-xs font-black mb-1">{{ item.title }}</p>
+                                    <p class="text-[11px] leading-relaxed">{{ item.message }}</p>
+                                    <p class="text-[10px] font-bold mt-2 opacity-80">{{ item.time }}</p>
+                                </div>
+                            </div>
+                            <div v-else class="text-center py-6 text-xs font-semibold text-slate-500">
+                                Belum ada notifikasi baru.
+                            </div>
+                        </div>
+                    </transition>
+                </div>
             </div>
         </header>
 
@@ -188,7 +706,7 @@ watch(
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2 animate-fade-in">
                             <div>
                                 <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Ringkasan Platform</h1>
-                                <p class="text-sm text-slate-500 mt-1">Pantau performa dan metrik utama EduTech LMS hari ini.</p>
+                                <p class="text-sm text-slate-500 mt-1">Pantau performa dan metrik utama Segara Digital LMS hari ini.</p>
                             </div>
                             <div class="flex gap-2 w-full sm:w-auto">
                                 <button @click="showToast('Laporan PDF sedang di-generate...', 'info')" class="flex-1 sm:flex-none px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 shadow-sm transition flex items-center justify-center"><i class="ph-bold ph-download-simple mr-2"></i> Report Data</button>
@@ -317,7 +835,7 @@ watch(
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 animate-fade-in">
                             <div>
                                 <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Data Pengguna</h1>
-                                <p class="text-sm text-slate-500 mt-1">Manajemen seluruh pengguna aktif di platform EduTech.</p>
+                                <p class="text-sm text-slate-500 mt-1">Manajemen seluruh pengguna aktif di platform Segara Digital.</p>
                             </div>
                             <button @click="openModal('add-user')" class="px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-bold hover:bg-primary-700 shadow-md transition flex items-center"><i class="ph-bold ph-plus mr-2"></i> Tambah User</button>
                         </div>
@@ -467,18 +985,18 @@ watch(
                     <template v-else-if="currentMenu === 'settings'">
                         <div class="mb-6 animate-fade-in">
                             <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Pengaturan Global</h1>
-                            <p class="text-sm text-slate-500 mt-1">Konfigurasi operasional platform EduTech.</p>
+                            <p class="text-sm text-slate-500 mt-1">Konfigurasi operasional platform Segara Digital.</p>
                         </div>
                         <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-6 sm:p-10 animate-slide-up max-w-3xl">
                             <form @submit.prevent="showToast('Pengaturan Global Berhasil Disimpan!')" class="space-y-6">
                                 <div>
                                     <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Nama Platform</label>
-                                    <input type="text" value="EduTech LMS" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
+                                    <input type="text" value="Segara Digital LMS" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
                                 </div>
                                 <div class="grid sm:grid-cols-2 gap-6">
                                     <div>
                                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Email Support</label>
-                                        <input type="email" value="support@edutech.id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
+                                        <input type="email" value="support@segaradigital.id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Mata Uang Default</label>
@@ -513,25 +1031,59 @@ watch(
                             <button @click="openModal('add-course')" class="relative z-10 px-8 py-4 bg-primary-600 text-white rounded-xl font-bold text-sm hover:bg-primary-500 transition shadow-lg shadow-primary-500/30 shrink-0 flex items-center active:scale-95 border border-primary-500"><i class="ph-bold ph-video-camera mr-2 text-xl"></i> Buat Kelas Baru</button>
                         </div>
 
+                        <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-6 sm:p-8 mb-8 animate-slide-up">
+                            <div class="flex flex-col lg:flex-row gap-6 lg:gap-8">
+                                <div class="lg:w-[260px] shrink-0">
+                                    <h3 class="text-lg font-black text-slate-900 mb-1">{{ instructorOverview.title }}</h3>
+                                    <p class="text-xs text-slate-500 mb-5">{{ instructorOverview.subtitle }}</p>
+                                    <div class="relative w-44 h-44 mx-auto">
+                                        <div class="absolute inset-0 rounded-full shadow-inner" :style="overviewChartStyle"></div>
+                                        <div class="absolute inset-[18px] rounded-full bg-white border border-slate-200 flex flex-col items-center justify-center text-center">
+                                            <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Dominan</span>
+                                            <span class="text-xl font-black text-slate-900 mt-1">{{ instructorOverview.dominantPercent }}%</span>
+                                            <span class="text-[10px] font-bold text-primary-600 mt-1 px-2 text-center">{{ instructorOverview.dominantRole }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="grid sm:grid-cols-2 gap-4 mb-5">
+                                        <div v-for="metric in instructorOverview.metrics" :key="metric.label" class="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                                            <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">{{ metric.label }}</p>
+                                            <p class="text-lg font-black text-slate-900 mt-1">{{ metric.value }}</p>
+                                            <p class="text-[11px] text-slate-500 mt-1">{{ metric.helper }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-2 max-w-md">
+                                        <div v-for="item in sortedOverviewDistribution" :key="item.key" class="grid grid-cols-[12px_minmax(0,1fr)_auto] items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-slate-50/80 transition-colors">
+                                            <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ backgroundColor: item.color }"></span>
+                                            <span class="text-xs font-semibold text-slate-600 truncate">{{ item.label }}</span>
+                                            <span class="text-xs font-black text-slate-900">{{ item.percent }}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 animate-slide-up">
                             <div class="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200 shadow-sm flex items-center justify-between hover:-translate-y-1 transition-transform group cursor-pointer">
                                 <div>
                                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Total Siswa Anda</p>
-                                    <h3 class="text-3xl font-black text-slate-900 group-hover:text-primary-600 transition-colors">1,248</h3>
+                                    <h3 class="text-3xl font-black text-slate-900 group-hover:text-primary-600 transition-colors">{{ instructorOverview.metrics[0]?.value || '0' }}</h3>
                                 </div>
                                 <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-3xl border border-blue-100"><i class="ph-duotone ph-users-three"></i></div>
                             </div>
                             <div class="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200 shadow-sm flex items-center justify-between hover:-translate-y-1 transition-transform group cursor-pointer">
                                 <div>
-                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Rating Rata-rata</p>
-                                    <h3 class="text-3xl font-black text-slate-900 flex items-center group-hover:text-yellow-600 transition-colors">4.8 <i class="ph-fill ph-star text-yellow-400 ml-2 text-2xl"></i></h3>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Roadmap Dominan</p>
+                                    <h3 class="text-lg font-black text-slate-900 group-hover:text-yellow-600 transition-colors">{{ instructorOverview.dominantRole }}</h3>
+                                    <p class="text-xs font-bold text-amber-600 mt-1">{{ instructorOverview.dominantPercent }}%</p>
                                 </div>
                                 <div class="w-16 h-16 bg-yellow-50 text-yellow-600 rounded-2xl flex items-center justify-center text-3xl border border-yellow-100"><i class="ph-duotone ph-star-half"></i></div>
                             </div>
                             <div class="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200 shadow-sm flex items-center justify-between hover:-translate-y-1 transition-transform group cursor-pointer">
                                 <div>
-                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Estimasi Pemasukan</p>
-                                    <h3 class="text-3xl font-black text-emerald-600">Rp 12.4M</h3>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Revenue Kotor</p>
+                                    <h3 class="text-3xl font-black text-emerald-600">{{ instructorOverview.metrics[2]?.value || 'Rp 0 Jt' }}</h3>
                                 </div>
                                 <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-3xl border border-emerald-100"><i class="ph-duotone ph-wallet"></i></div>
                             </div>
@@ -573,21 +1125,69 @@ watch(
                             </div>
                             <button @click="openModal('add-course')" class="w-full sm:w-auto px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-bold hover:bg-primary-700 shadow-md transition flex items-center justify-center"><i class="ph-bold ph-plus mr-2"></i> Buat Kelas Baru</button>
                         </div>
-                        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-slide-up">
-                            <div v-for="(course, idx) in instructorCourses" :key="idx" class="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden group hover:shadow-xl transition-all">
+                        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-6 animate-slide-up">
+                            <article
+                              v-for="(course, idx) in instructorCourses"
+                              :key="course.slug || idx"
+                              @click="openCourseFromDashboard(course, 'mentor')"
+                              class="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden group hover:shadow-xl hover:border-primary-300 transition-all h-full cursor-pointer"
+                            >
                                 <div class="w-full aspect-video bg-slate-100 relative overflow-hidden">
                                     <img :src="course.img" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                                    <div class="absolute top-3 right-3 px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider" :class="course.status === 'Published' ? 'bg-emerald-500 text-white shadow-md' : 'bg-amber-400 text-slate-900 shadow-md'">{{ course.status }}</div>
+                                    <div class="absolute top-3 right-3 px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider" :class="course.status === 'Published' ? 'bg-emerald-500 text-white shadow-md' : 'bg-amber-400 text-slate-900 shadow-md'">
+                                      {{ course.status }}
+                                    </div>
+                                    <div class="absolute bottom-3 left-3 px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider bg-white/90 text-slate-700 border border-white/80 shadow-sm">
+                                      {{ course.level }}
+                                    </div>
                                 </div>
                                 <div class="p-5 flex flex-col h-full">
-                                    <h3 class="font-bold text-slate-900 text-sm mb-4 line-clamp-2 leading-snug">{{ course.title }}</h3>
-                                    <div class="grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 mb-4 mt-auto">
-                                        <div><p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Siswa</p><p class="font-black text-slate-800">{{ course.students }}</p></div>
-                                        <div><p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Penghasilan</p><p class="font-black text-emerald-600">{{ course.revenue }}</p></div>
+                                    <div class="mb-4">
+                                      <h3 class="font-bold text-slate-900 text-sm mb-2 line-clamp-2 leading-snug">{{ course.title }}</h3>
+                                      <p class="text-[11px] text-slate-500 leading-relaxed line-clamp-2">
+                                        {{ course.description || 'Silabus lengkap, materi praktik, dan sesi evaluasi mingguan untuk siswa Anda.' }}
+                                      </p>
                                     </div>
-                                    <button class="w-full py-2.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-900 hover:text-white transition">Edit Materi</button>
+
+                                    <div class="flex flex-wrap gap-2 mb-4">
+                                        <span class="px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200">{{ course.category }}</span>
+                                        <span class="px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider bg-blue-50 text-blue-600 border border-blue-100">{{ course.modulesCount || 0 }} Modul</span>
+                                        <span class="px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider bg-violet-50 text-violet-600 border border-violet-100">{{ course.lessonsCount || 0 }} Lesson</span>
+                                    </div>
+
+                                    <div class="grid grid-cols-3 gap-3 border-t border-slate-100 pt-4">
+                                        <div>
+                                            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Siswa</p>
+                                            <p class="font-black text-slate-800 text-sm">{{ course.students }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Progress</p>
+                                            <p class="font-black text-primary-600 text-sm">{{ course.completionRate || 0 }}%</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Revenue</p>
+                                            <p class="font-black text-emerald-600 text-sm">{{ course.revenue }}</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-3">
+                                      <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                        <div class="h-1.5 rounded-full bg-gradient-to-r from-primary-500 to-blue-500" :style="{ width: `${course.completionRate || 0}%` }"></div>
+                                      </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-2 mt-4">
+                                      <button @click.stop="openCourseFromDashboard(course, 'mentor')" class="py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-primary-600 transition">
+                                        Kelola Kelas
+                                      </button>
+                                      <button @click.stop="showToast('Editor materi dibuka untuk kelas ini.', 'info')" class="py-2.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-100 transition">
+                                        Edit Materi
+                                      </button>
+                                    </div>
+
+                                    <p class="text-[10px] text-slate-400 mt-3">Mentor: <span class="font-bold text-slate-600">{{ course.mentor }}</span> • Update: {{ course.updatedAt }}</p>
                                 </div>
-                            </div>
+                            </article>
                         </div>
                     </template>
 
@@ -650,31 +1250,98 @@ watch(
                             <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Pengaturan Profil</h1>
                             <p class="text-sm text-slate-500 mt-1">Sesuaikan informasi publik Anda sebagai mentor untuk menarik lebih banyak siswa.</p>
                         </div>
-                        <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-6 sm:p-10 animate-slide-up max-w-3xl">
-                            <div class="flex items-center gap-6 mb-8 border-b border-slate-100 pb-8">
-                                <img src="https://i.pravatar.cc/150?img=8" class="w-24 h-24 rounded-2xl object-cover shadow-sm border border-slate-200 bg-slate-50">
-                                <div>
-                                    <button @click="showToast('Fitur upload gambar akan aktif setelah integrasi API Storage.', 'info')" class="px-5 py-2.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl font-bold text-xs hover:bg-slate-100 transition shadow-sm mb-2 flex items-center"><i class="ph-bold ph-upload-simple mr-1.5 text-lg"></i> Ganti Foto Profil</button>
-                                    <p class="text-[10px] text-slate-500">Maks. 2MB. Format JPG, PNG.</p>
+                        <div class="grid xl:grid-cols-[minmax(0,2fr)_320px] gap-6 items-start">
+                            <div class="space-y-6">
+                                <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-6 sm:p-10 animate-slide-up">
+                                    <div class="flex items-center gap-6 mb-8 border-b border-slate-100 pb-8">
+                                        <img src="https://i.pravatar.cc/150?img=8" class="w-24 h-24 rounded-2xl object-cover shadow-sm border border-slate-200 bg-slate-50">
+                                        <div>
+                                            <button @click="showToast('Fitur upload gambar akan aktif setelah integrasi API Storage.', 'info')" class="px-5 py-2.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl font-bold text-xs hover:bg-slate-100 transition shadow-sm mb-2 flex items-center"><i class="ph-bold ph-upload-simple mr-1.5 text-lg"></i> Ganti Foto Profil</button>
+                                            <p class="text-[10px] text-slate-500">Maks. 2MB. Format JPG, PNG.</p>
+                                        </div>
+                                    </div>
+                                    <form @submit.prevent="showToast('Profil berhasil diperbarui!')" class="space-y-6">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Nama Tampilan</label>
+                                            <input type="text" value="Budi Santoso" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Pekerjaan & Perusahaan Saat Ini</label>
+                                            <input type="text" value="Senior Backend Engineer di Gojek" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Bio Singkat</label>
+                                            <textarea rows="4" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all resize-none shadow-sm">Seorang Engineer dengan 8+ tahun pengalaman membangun sistem Enterprise skala besar menggunakan ekosistem PHP dan Go.</textarea>
+                                        </div>
+                                        <div class="pt-6 border-t border-slate-100">
+                                            <button type="submit" class="w-full sm:w-auto px-8 py-3.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-primary-600 shadow-md transition-all active:scale-95 flex items-center justify-center"><i class="ph-bold ph-floppy-disk mr-2 text-lg"></i> Simpan Profil</button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-6 sm:p-8 animate-slide-up">
+                                    <div class="flex items-center justify-between gap-4 mb-5 pb-4 border-b border-slate-100">
+                                        <div>
+                                            <h3 class="text-lg font-black text-slate-900">Ganti Password</h3>
+                                            <p class="text-xs text-slate-500 mt-1">Untuk keamanan akun instruktur, gunakan password baru yang kuat.</p>
+                                        </div>
+                                        <span class="text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-100 px-2.5 py-1 rounded-lg">Security</span>
+                                    </div>
+                                    <form @submit.prevent="submitInstructorPasswordChange" class="space-y-4">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Password Saat Ini</label>
+                                            <input v-model="instructorPassword.current" type="password" placeholder="Masukkan password saat ini" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Password Baru</label>
+                                            <input v-model="instructorPassword.next" type="password" placeholder="Minimal 8 karakter" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Konfirmasi Password Baru</label>
+                                            <input v-model="instructorPassword.confirm" type="password" placeholder="Ulangi password baru" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
+                                        </div>
+                                        <p v-if="passwordNotice" class="text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                                            {{ passwordNotice }}
+                                        </p>
+                                        <button type="submit" :disabled="isSubmittingPasswordChange" class="w-full sm:w-auto px-8 py-3.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-primary-600 shadow-md transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed">
+                                            <i class="ph-bold ph-lock-key mr-2 text-base"></i>
+                                            {{ isSubmittingPasswordChange ? 'Menyimpan...' : 'Perbarui Password' }}
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
-                            <form @submit.prevent="showToast('Profil berhasil diperbarui!')" class="space-y-6">
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Nama Tampilan</label>
-                                    <input type="text" value="Budi Santoso" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
+
+                            <aside class="space-y-6 xl:sticky xl:top-24">
+                                <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-6 animate-slide-up">
+                                    <div class="flex items-center gap-4 mb-4">
+                                        <img :src="currentUser.avatar" class="w-14 h-14 rounded-xl object-cover border border-slate-200 bg-slate-50">
+                                        <div>
+                                            <p class="text-sm font-black text-slate-900 leading-tight">{{ currentUser.name }}</p>
+                                            <p class="text-[11px] text-slate-500 mt-1">Public mentor profile</p>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                            <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Kelas Aktif</p>
+                                            <p class="text-xl font-black text-slate-900 mt-1">{{ instructorOverview.metrics[1]?.value || '0' }}</p>
+                                        </div>
+                                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                            <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Total Siswa</p>
+                                            <p class="text-xl font-black text-slate-900 mt-1">{{ instructorOverview.metrics[0]?.value || '0' }}</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Pekerjaan & Perusahaan Saat Ini</label>
-                                    <input type="text" value="Senior Backend Engineer di Gojek" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
+
+                                <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-6 animate-slide-up">
+                                    <h3 class="text-sm font-black text-slate-900 mb-2">Tips Profil Mentor</h3>
+                                    <p class="text-xs text-slate-500 leading-relaxed mb-4">
+                                      Tambahkan pencapaian terbaru dan update bio secara berkala agar tingkat konversi siswa baru tetap tinggi.
+                                    </p>
+                                    <button @click="currentMenu = 'courses'" class="w-full py-2.5 bg-primary-50 text-primary-700 border border-primary-100 rounded-xl text-xs font-bold hover:bg-primary-600 hover:text-white transition">
+                                      Lihat Performa Kelas
+                                    </button>
                                 </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Bio Singkat</label>
-                                    <textarea rows="4" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all resize-none shadow-sm">Seorang Engineer dengan 8+ tahun pengalaman membangun sistem Enterprise skala besar menggunakan ekosistem PHP dan Go.</textarea>
-                                </div>
-                                <div class="pt-6 border-t border-slate-100">
-                                    <button type="submit" class="w-full sm:w-auto px-8 py-3.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-primary-600 shadow-md transition-all active:scale-95 flex items-center justify-center"><i class="ph-bold ph-floppy-disk mr-2 text-lg"></i> Simpan Profil</button>
-                                </div>
-                            </form>
+                            </aside>
                         </div>
                     </template>
 
@@ -699,7 +1366,7 @@ watch(
                             
                             <div class="relative z-10 w-full lg:w-3/5">
                                 <span class="bg-white/20 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg uppercase tracking-widest mb-4 border border-white/20 inline-block backdrop-blur-sm">Teruskan Belajarmu</span>
-                                <h1 class="text-3xl sm:text-4xl font-black mb-3 leading-tight tracking-tight">Halo Andi! Saatnya kembali ngoding. ðŸš€</h1>
+                                <h1 class="text-3xl sm:text-4xl font-black mb-3 leading-tight tracking-tight">Halo Andi! Saatnya kembali ngoding.</h1>
                                 <p class="text-blue-100 text-sm sm:text-base mb-8 max-w-md leading-relaxed">Anda sedang mempelajari <span class="font-bold text-white">"Fullstack Web: Nuxt 4 & Laravel 13"</span>. Konsistensi adalah kunci, sisa 4 modul lagi menuju kelulusan Anda.</p>
                                 
                                 <div class="bg-black/20 p-5 rounded-2xl backdrop-blur-md border border-white/10 max-w-sm">
@@ -725,7 +1392,40 @@ watch(
                                     </div>
                                     <div class="absolute top-4 left-4 bg-primary-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg uppercase tracking-wider shadow-md">Lanjut Episode 12</div>
                                 </div>
-                                <button @click="showToast('Video Player Sedang Memuat...')" class="w-full mt-4 py-4 bg-white text-primary-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition shadow-lg active:scale-95 flex items-center justify-center border border-slate-200">Lanjutkan Menonton <i class="ph-bold ph-arrow-right ml-2 text-lg"></i></button>
+                                <button @click="studentActiveCourses[0] && openCourseFromDashboard(studentActiveCourses[0], 'student')" class="w-full mt-4 py-4 bg-white text-primary-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition shadow-lg active:scale-95 flex items-center justify-center border border-slate-200">Lanjutkan Menonton <i class="ph-bold ph-arrow-right ml-2 text-lg"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-6 sm:p-8 mb-8 animate-slide-up">
+                            <div class="flex flex-col lg:flex-row gap-6 lg:gap-8">
+                                <div class="lg:w-[260px] shrink-0">
+                                    <h3 class="text-lg font-black text-slate-900 mb-1">{{ studentOverview.title }}</h3>
+                                    <p class="text-xs text-slate-500 mb-5">{{ studentOverview.subtitle }}</p>
+                                    <div class="relative w-44 h-44 mx-auto">
+                                        <div class="absolute inset-0 rounded-full shadow-inner" :style="overviewChartStyle"></div>
+                                        <div class="absolute inset-[18px] rounded-full bg-white border border-slate-200 flex flex-col items-center justify-center text-center">
+                                            <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Dominan</span>
+                                            <span class="text-xl font-black text-slate-900 mt-1">{{ studentOverview.dominantPercent }}%</span>
+                                            <span class="text-[10px] font-bold text-primary-600 mt-1 px-2 text-center">{{ studentOverview.dominantRole }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="grid sm:grid-cols-2 gap-4 mb-5">
+                                        <div v-for="metric in studentOverview.metrics" :key="metric.label" class="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                                            <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">{{ metric.label }}</p>
+                                            <p class="text-lg font-black text-slate-900 mt-1">{{ metric.value }}</p>
+                                            <p class="text-[11px] text-slate-500 mt-1">{{ metric.helper }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-2 max-w-md">
+                                        <div v-for="item in sortedOverviewDistribution" :key="item.key" class="grid grid-cols-[12px_minmax(0,1fr)_auto] items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-slate-50/80 transition-colors">
+                                            <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ backgroundColor: item.color }"></span>
+                                            <span class="text-xs font-semibold text-slate-600 truncate">{{ item.label }}</span>
+                                            <span class="text-xs font-black text-slate-900">{{ item.percent }}%</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -739,52 +1439,44 @@ watch(
                             </div>
                             
                             <div class="grid md:grid-cols-2 gap-6">
-                                <div class="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-xl hover:border-primary-300 hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col group cursor-pointer">
-                                    <div class="flex flex-col sm:flex-row gap-5 mb-6">
+                                <article
+                                  v-for="course in studentActiveCourses"
+                                  :key="course.slug"
+                                  @click="openCourseFromDashboard(course, 'student')"
+                                  class="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-xl hover:border-primary-300 hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col group cursor-pointer relative overflow-hidden"
+                                >
+                                    <div class="absolute -right-10 -top-10 w-32 h-32 rounded-full blur-2xl" :class="course.status === 'completed' ? 'bg-emerald-500/10' : 'bg-primary-500/10'"></div>
+                                    <div class="flex flex-col sm:flex-row gap-5 mb-6 relative z-10">
                                         <div class="w-full sm:w-28 aspect-video sm:aspect-square shrink-0 rounded-xl overflow-hidden bg-slate-100 border border-slate-100 relative">
-                                            <img src="https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                                            <img :src="course.image" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
                                             <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                 <i class="ph-fill ph-play-circle text-white text-3xl"></i>
                                             </div>
                                         </div>
                                         <div class="flex flex-col justify-center">
-                                            <span class="text-[9px] font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded uppercase tracking-wider mb-2 w-max border border-primary-100">Web Development</span>
-                                            <h3 class="font-bold text-slate-900 text-base leading-snug line-clamp-2 group-hover:text-primary-600 transition-colors">Fullstack Web: Nuxt 4 & Laravel 13 API Enterprise</h3>
-                                        </div>
-                                    </div>
-                                    <div class="mt-auto pt-5 border-t border-slate-100">
-                                        <div class="flex justify-between items-center mb-2.5">
-                                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Progress Belajar</span>
-                                            <span class="text-xs font-black text-primary-600">65% Selesai</span>
-                                        </div>
-                                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner">
-                                            <div class="bg-primary-500 h-2 rounded-full transition-all duration-1000" style="width: 65%"></div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col group cursor-pointer relative overflow-hidden">
-                                    <div class="absolute -right-10 -top-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl"></div>
-                                    <div class="flex flex-col sm:flex-row gap-5 mb-6 relative z-10">
-                                        <div class="w-full sm:w-28 aspect-video sm:aspect-square shrink-0 rounded-xl overflow-hidden bg-slate-100 border border-slate-100">
-                                            <img src="https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
-                                        </div>
-                                        <div class="flex flex-col justify-center">
-                                            <span class="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded uppercase tracking-wider mb-2 w-max border border-emerald-100">Lulus</span>
-                                            <h3 class="font-bold text-slate-900 text-base leading-snug line-clamp-2">Dasar Pemrograman Web: HTML, CSS & JS</h3>
+                                            <span class="text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider mb-2 w-max border" :class="course.status === 'completed' ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-primary-600 bg-primary-50 border-primary-100'">
+                                              {{ course.status === 'completed' ? 'Lulus' : course.category }}
+                                            </span>
+                                            <h3 class="font-bold text-slate-900 text-base leading-snug line-clamp-2 group-hover:text-primary-600 transition-colors">{{ course.title }}</h3>
+                                            <p class="text-[11px] text-slate-500 mt-2">{{ course.mentor }} • {{ course.level }}</p>
                                         </div>
                                     </div>
                                     <div class="mt-auto pt-5 border-t border-slate-100 relative z-10">
                                         <div class="flex justify-between items-center mb-2.5">
-                                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center"><i class="ph-fill ph-check-circle text-emerald-500 mr-1.5 text-lg"></i> Kelas Selesai</span>
-                                            <span class="text-xs font-black text-emerald-600">100%</span>
+                                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                              {{ course.status === 'completed' ? 'Kelas Selesai' : 'Progress Belajar' }}
+                                            </span>
+                                            <span class="text-xs font-black" :class="course.status === 'completed' ? 'text-emerald-600' : 'text-primary-600'">{{ course.progress }}% Selesai</span>
                                         </div>
-                                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner mb-4">
-                                            <div class="bg-emerald-500 h-2 rounded-full transition-all duration-1000" style="width: 100%"></div>
+                                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner mb-3">
+                                            <div class="h-2 rounded-full transition-all duration-1000" :class="course.status === 'completed' ? 'bg-emerald-500' : 'bg-primary-500'" :style="{ width: `${course.progress}%` }"></div>
                                         </div>
-                                        <button @click.stop="showToast('Sertifikat berhasil diunduh ke perangkat Anda!')" class="w-full py-2.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200 hover:bg-emerald-500 hover:text-white transition shadow-sm flex items-center justify-center"><i class="ph-bold ph-certificate mr-2 text-lg"></i> Unduh Sertifikat Digital</button>
+                                        <p class="text-[11px] text-slate-500 mb-3">{{ course.nextLesson }}</p>
+                                        <button @click.stop="openCourseFromDashboard(course, 'student')" class="w-full py-2.5 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-primary-600 transition shadow-sm flex items-center justify-center">
+                                          <i class="ph-bold ph-play mr-2 text-base"></i> Buka Kelas
+                                        </button>
                                     </div>
-                                </div>
+                                </article>
                             </div>
                         </div>
                     </template>
@@ -795,28 +1487,28 @@ watch(
                             <p class="text-sm text-slate-500 mt-1">Eksplorasi kelas premium baru untuk menaikkan nilai portofolio Anda.</p>
                         </div>
                         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-slide-up">
-                            <div class="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 p-5 flex flex-col group cursor-pointer">
+                            <article
+                              v-for="course in studentCatalogCourses"
+                              :key="course.slug"
+                              @click="openCourseFromDashboard(course, 'catalog')"
+                              class="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-primary-300 transition-all duration-300 p-5 flex flex-col group cursor-pointer"
+                            >
                                 <div class="w-full aspect-video rounded-xl bg-slate-100 mb-4 overflow-hidden relative">
-                                    <img src="https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=400&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                                    <img :src="course.image" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                                    <div class="absolute top-3 left-3 bg-white/90 text-slate-700 px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider border border-white shadow-sm">
+                                      Sudah Dimiliki
+                                    </div>
                                 </div>
-                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Backend & Database</span>
-                                <h3 class="font-bold text-slate-900 text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-primary-600 transition-colors mb-4">Mastering PostgreSQL 17 & Redis 7 Caching</h3>
-                                <div class="mt-auto pt-4 border-t border-slate-100 flex justify-between items-center">
-                                    <span class="text-xs font-bold text-slate-500"><i class="ph-fill ph-star text-yellow-400 mr-1 text-lg align-text-bottom"></i> 4.8</span>
-                                    <button @click.stop="showToast('Sistem Pembayaran sedang Maintenance', 'info')" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md hover:bg-primary-600 transition">Rp 399.000</button>
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">{{ course.category }}</span>
+                                <h3 class="font-bold text-slate-900 text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-primary-600 transition-colors mb-2">{{ course.title }}</h3>
+                                <p class="text-[11px] text-slate-500 mb-4">{{ course.mentor }} • {{ course.level }}</p>
+                                <div class="mt-auto pt-4 border-t border-slate-100 flex justify-between items-center gap-3">
+                                    <span class="text-xs font-bold text-slate-500"><i class="ph-fill ph-star text-yellow-400 mr-1 text-lg align-text-bottom"></i> {{ course.rating }}</span>
+                                    <button @click.stop="openCourseFromDashboard(course, 'catalog')" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md hover:bg-primary-600 transition">
+                                      {{ course.accessLabel }}
+                                    </button>
                                 </div>
-                            </div>
-                            <div class="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 p-5 flex flex-col group cursor-pointer">
-                                <div class="w-full aspect-video rounded-xl bg-slate-100 mb-4 overflow-hidden relative">
-                                    <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
-                                </div>
-                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">DevOps & Cloud</span>
-                                <h3 class="font-bold text-slate-900 text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-primary-600 transition-colors mb-4">Docker Compose & Nginx Proxy Setup</h3>
-                                <div class="mt-auto pt-4 border-t border-slate-100 flex justify-between items-center">
-                                    <span class="text-xs font-bold text-slate-500"><i class="ph-fill ph-star text-yellow-400 mr-1 text-lg align-text-bottom"></i> 5.0</span>
-                                    <button @click.stop="showToast('Sistem Pembayaran sedang Maintenance', 'info')" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md hover:bg-primary-600 transition">Rp 549.000</button>
-                                </div>
-                            </div>
+                            </article>
                         </div>
                     </template>
 
@@ -824,36 +1516,72 @@ watch(
                         <div class="mb-10 border-b border-slate-200 pb-6 flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 animate-fade-in">
                             <div>
                                 <h1 class="text-3xl font-black text-slate-900 tracking-tight">Koleksi Sertifikat Anda</h1>
-                                <p class="text-sm text-slate-500 mt-2">Sertifikat kelulusan resmi yang bisa dilampirkan di LinkedIn atau CV.</p>
+                                <p class="text-sm text-slate-500 mt-2">Sertifikat menampilkan nama murid, kelas, tanggal selesai, dan bisa diunduh langsung.</p>
                             </div>
-                            <span class="bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold text-xs px-3 py-1.5 rounded-lg flex items-center w-max"><i class="ph-bold ph-medal text-lg mr-2"></i> 1 Sertifikat Diperoleh</span>
+                            <span class="bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold text-xs px-3 py-1.5 rounded-lg flex items-center w-max">
+                              <i class="ph-bold ph-medal text-lg mr-2"></i> {{ issuedCertificates.length }} Sertifikat Diperoleh
+                            </span>
                         </div>
                         
                         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-slide-up">
-                            <div class="bg-white border border-slate-200 shadow-sm rounded-[2rem] p-6 flex flex-col hover:shadow-xl hover:border-primary-300 transition-all group">
-                                <div class="w-full aspect-[4/3] bg-slate-100 rounded-xl mb-6 relative overflow-hidden border border-slate-200 shadow-inner group cursor-pointer">
-                                    <img src="https://images.unsplash.com/photo-1523800503107-5bc3ba2a6f81?q=80&w=600" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90">
-                                    <div class="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center backdrop-blur-sm gap-3">
-                                        <button @click="showToast('Mengunduh Sertifikat High Resolution...', 'info')" class="w-14 h-14 bg-white text-primary-600 rounded-full flex items-center justify-center text-2xl font-bold shadow-2xl hover:scale-110 transition-transform" title="Unduh PDF Resmi"><i class="ph-bold ph-download-simple"></i></button>
-                                        <span class="text-white text-[10px] font-bold tracking-widest uppercase">Unduh PDF Resolusi Tinggi</span>
+                            <article
+                              v-for="certificate in certificateRecords"
+                              :key="certificate.id"
+                              class="bg-white border border-slate-200 shadow-sm rounded-[2rem] p-6 flex flex-col hover:shadow-xl hover:border-primary-300 transition-all group"
+                            >
+                                <template v-if="certificate.status === 'issued'">
+                                    <div class="w-full aspect-[4/3] bg-slate-100 rounded-xl mb-6 relative overflow-hidden border border-slate-200 shadow-inner group cursor-pointer">
+                                        <img :src="certificate.image" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90">
+                                        <div class="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center backdrop-blur-sm gap-3">
+                                            <button @click.stop="downloadCertificate(certificate)" class="w-14 h-14 bg-white text-primary-600 rounded-full flex items-center justify-center text-2xl font-bold shadow-2xl hover:scale-110 transition-transform" title="Unduh Sertifikat"><i class="ph-bold ph-download-simple"></i></button>
+                                            <span class="text-white text-[10px] font-bold tracking-widest uppercase">Unduh Sertifikat</span>
+                                        </div>
+                                        <div class="absolute top-3 left-3 bg-emerald-500 text-white px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider flex items-center shadow-md"><i class="ph-bold ph-check-circle mr-1"></i> Verified</div>
                                     </div>
-                                    <div class="absolute top-3 left-3 bg-emerald-500 text-white px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider flex items-center shadow-md"><i class="ph-bold ph-check-circle mr-1"></i> Verified</div>
-                                </div>
-                                <div class="text-center flex-1 flex flex-col">
-                                    <span class="text-[9px] font-bold text-primary-600 bg-primary-50 w-max mx-auto px-2.5 py-1 rounded-md border border-primary-100 uppercase tracking-wider mb-3">Web Development</span>
-                                    <h3 class="font-bold text-slate-900 text-lg leading-tight mb-2">Dasar Pemrograman Web: HTML, CSS & JS</h3>
-                                    <p class="text-xs text-slate-500 mb-6 font-medium mt-auto border-t border-slate-100 pt-4">Diterbitkan: 12 Apr 2026<br><span class="font-mono text-[10px] text-slate-400 mt-1 inline-block">ID: EDT-2026-X89J</span></p>
-                                    <button @click="showToast('Dialihkan ke LinkedIn...', 'info')" class="w-full py-3.5 bg-[#0A66C2] text-white font-bold text-xs rounded-xl hover:bg-[#004182] transition shadow-md shadow-[#0A66C2]/30 flex items-center justify-center active:scale-95"><i class="ph-fill ph-linkedin-logo mr-2 text-xl"></i> Tambahkan ke LinkedIn</button>
-                                </div>
-                            </div>
-                            
-                            <div class="bg-slate-50 border-2 border-slate-200 border-dashed rounded-[2rem] p-8 flex flex-col items-center justify-center text-center relative overflow-hidden group">
-                                <div class="w-20 h-20 bg-white rounded-2xl flex items-center justify-center text-4xl text-slate-300 mb-5 border border-slate-200 shadow-sm"><i class="ph-duotone ph-lock-key"></i></div>
-                                <span class="text-[10px] font-bold text-primary-600 bg-primary-50 border border-primary-100 px-3 py-1 rounded-full uppercase tracking-wider mb-3 shadow-sm">Progress 65%</span>
-                                <h3 class="font-bold text-slate-700 text-lg mb-3 leading-tight">Fullstack Web: Nuxt 4 & Laravel 13</h3>
-                                <p class="text-xs text-slate-500 max-w-[220px] leading-relaxed mb-6">Selesaikan 4 modul dan project akhir yang tersisa untuk membuka sertifikat eksklusif ini.</p>
-                                <button @click="currentMenu = 'dashboard'" class="px-6 py-3 bg-white border border-slate-200 text-sm font-bold text-slate-700 rounded-xl hover:text-primary-600 hover:border-primary-200 shadow-sm transition">Lanjut Belajar <i class="ph-bold ph-arrow-right ml-1 align-middle"></i></button>
-                            </div>
+                                    <div class="text-center flex-1 flex flex-col">
+                                        <span class="text-[9px] font-bold text-primary-600 bg-primary-50 w-max mx-auto px-2.5 py-1 rounded-md border border-primary-100 uppercase tracking-wider mb-3">{{ certificate.track }}</span>
+                                        <h3 class="font-bold text-slate-900 text-lg leading-tight mb-4">{{ certificate.courseTitle }}</h3>
+
+                                        <div class="grid gap-2 text-left bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4">
+                                            <p class="text-[11px] text-slate-500"><span class="font-bold text-slate-700">Nama Murid:</span> {{ currentUser.name }}</p>
+                                            <p class="text-[11px] text-slate-500"><span class="font-bold text-slate-700">Selesai:</span> {{ formatDateLabel(certificate.completedAt) }}</p>
+                                            <p class="text-[11px] text-slate-500"><span class="font-bold text-slate-700">Diterbitkan:</span> {{ formatDateLabel(certificate.issuedAt) }}</p>
+                                        </div>
+
+                                        <p class="text-xs text-slate-500 mb-5 font-medium mt-auto border-t border-slate-100 pt-4">
+                                          <span class="font-mono text-[10px] text-slate-400 mt-1 inline-block">ID: {{ certificate.credentialId }}</span>
+                                        </p>
+                                        <div class="grid grid-cols-2 gap-2">
+                                          <button @click="downloadCertificate(certificate)" class="py-3 bg-slate-900 text-white font-bold text-xs rounded-xl hover:bg-primary-600 transition shadow-md flex items-center justify-center active:scale-95">
+                                            <i class="ph-bold ph-download-simple mr-1.5 text-base"></i> Unduh
+                                          </button>
+                                          <button @click="showToast('Dialihkan ke LinkedIn...', 'info')" class="py-3 bg-[#0A66C2] text-white font-bold text-xs rounded-xl hover:bg-[#004182] transition shadow-md shadow-[#0A66C2]/30 flex items-center justify-center active:scale-95">
+                                            <i class="ph-fill ph-linkedin-logo mr-1.5 text-lg"></i> LinkedIn
+                                          </button>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <template v-else>
+                                    <div class="w-full aspect-[4/3] bg-slate-50 border-2 border-slate-200 border-dashed rounded-xl mb-6 flex items-center justify-center">
+                                      <div class="w-20 h-20 bg-white rounded-2xl flex items-center justify-center text-4xl text-slate-300 border border-slate-200 shadow-sm">
+                                        <i class="ph-duotone ph-lock-key"></i>
+                                      </div>
+                                    </div>
+                                    <div class="text-center flex-1 flex flex-col">
+                                      <span class="text-[10px] font-bold text-primary-600 bg-primary-50 border border-primary-100 px-3 py-1 rounded-full uppercase tracking-wider mb-3 shadow-sm w-max mx-auto">
+                                        Progress {{ certificate.progressPercent || 0 }}%
+                                      </span>
+                                      <h3 class="font-bold text-slate-700 text-lg mb-3 leading-tight">{{ certificate.courseTitle }}</h3>
+                                      <p class="text-xs text-slate-500 max-w-[240px] mx-auto leading-relaxed mb-6">
+                                        Selesaikan {{ certificate.remainingModules || 0 }} modul tersisa untuk membuka sertifikat resmi kelas ini.
+                                      </p>
+                                      <button @click="openCourseFromDashboard({ slug: certificate.courseSlug, title: certificate.courseTitle }, 'student')" class="px-6 py-3 bg-white border border-slate-200 text-sm font-bold text-slate-700 rounded-xl hover:text-primary-600 hover:border-primary-200 shadow-sm transition">
+                                        Lanjut Belajar <i class="ph-bold ph-arrow-right ml-1 align-middle"></i>
+                                      </button>
+                                    </div>
+                                </template>
+                            </article>
                         </div>
                     </template>
 
@@ -938,147 +1666,13 @@ watch(
                     </template>
                 </template>
 
-
-                <!-- ==============================================
-                     3. VIEW: STUDENT
-                =============================================== -->
-                <template v-if="role === 'student'">
-                    <template v-if="currentMenu === 'dashboard'">
-                        <div class="bg-gradient-to-r from-blue-600 to-primary-600 rounded-[2.5rem] p-8 md:p-12 text-white shadow-xl shadow-primary-500/20 relative overflow-hidden mb-8 flex flex-col lg:flex-row items-center justify-between gap-8 md:gap-12 animate-fade-in">
-                            <div class="absolute top-0 right-0 w-[400px] h-[400px] bg-white rounded-full blur-[100px] opacity-10 pointer-events-none"></div>
-                            
-                            <div class="relative z-10 w-full lg:w-3/5">
-                                <span class="bg-white/20 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg uppercase tracking-widest mb-4 border border-white/20 inline-block backdrop-blur-sm">Teruskan Belajarmu</span>
-                                <h1 class="text-3xl sm:text-4xl font-black mb-3 leading-tight tracking-tight">Halo Andi! Saatnya kembali ngoding. ðŸš€</h1>
-                                <p class="text-blue-100 text-sm sm:text-base mb-8 max-w-md leading-relaxed">Anda sedang mempelajari <span class="font-bold text-white">"Fullstack Web: Nuxt 4 & Laravel 13"</span>. Konsistensi adalah kunci, sisa 4 modul lagi menuju kelulusan Anda.</p>
-                                
-                                <div class="bg-black/20 p-5 rounded-2xl backdrop-blur-md border border-white/10 max-w-sm">
-                                    <div class="flex justify-between items-end mb-2">
-                                        <span class="text-xs font-bold uppercase tracking-wider text-blue-200 flex items-center"><i class="ph-bold ph-chart-line-up mr-2 text-primary-300"></i> Progress Keseluruhan</span>
-                                        <span class="text-xl font-black text-white">65%</span>
-                                    </div>
-                                    <div class="w-full bg-slate-800/80 rounded-full h-3 overflow-hidden shadow-inner">
-                                        <div class="bg-gradient-to-r from-blue-400 to-white h-3 rounded-full relative" style="width: 65%">
-                                            <div class="absolute inset-0 bg-white/20 animate-pulse"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="relative z-10 w-full sm:w-2/3 lg:w-2/5 shrink-0 group cursor-pointer">
-                                <div class="aspect-video rounded-2xl overflow-hidden border border-white/20 shadow-2xl relative bg-slate-800">
-                                    <img src="https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&q=80" class="w-full h-full object-cover opacity-60 group-hover:scale-105 group-hover:opacity-90 transition-all duration-500">
-                                    <div class="absolute inset-0 flex items-center justify-center">
-                                        <div class="w-16 h-16 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-primary-600 shadow-[0_0_30px_rgba(255,255,255,0.4)] group-hover:scale-110 transition-transform">
-                                            <i class="ph-fill ph-play text-2xl ml-1"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                                <button @click="showToast('Video Player Sedang Memuat...')" class="w-full mt-4 py-4 bg-white text-primary-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition shadow-lg active:scale-95 flex items-center justify-center border border-slate-200">Lanjutkan Menonton <i class="ph-bold ph-arrow-right ml-2 text-lg"></i></button>
-                            </div>
-                        </div>
-
-                        <!-- Student Active Courses -->
-                        <div class="mb-8 animate-slide-up">
-                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 border-b border-slate-200 pb-4">
-                                <div>
-                                    <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Kelas Aktif Anda</h2>
-                                    <p class="text-sm text-slate-500 mt-1">Daftar kelas premium yang sudah Anda beli.</p>
-                                </div>
-                                <button @click="currentMenu = 'catalog'" class="text-xs sm:text-sm font-bold text-primary-600 hover:bg-primary-50 px-4 py-2.5 rounded-xl transition-colors">Katalog Kelas Baru <i class="ph-bold ph-arrow-right inline-block align-middle ml-1"></i></button>
-                            </div>
-                            
-                            <div class="grid md:grid-cols-2 gap-6">
-                                <div class="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-xl hover:border-primary-300 hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col group cursor-pointer">
-                                    <div class="flex flex-col sm:flex-row gap-5 mb-6">
-                                        <div class="w-full sm:w-28 aspect-video sm:aspect-square shrink-0 rounded-xl overflow-hidden bg-slate-100 border border-slate-100 relative">
-                                            <img src="https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
-                                            <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                <i class="ph-fill ph-play-circle text-white text-3xl"></i>
-                                            </div>
-                                        </div>
-                                        <div class="flex flex-col justify-center">
-                                            <span class="text-[9px] font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded uppercase tracking-wider mb-2 w-max border border-primary-100">Web Development</span>
-                                            <h3 class="font-bold text-slate-900 text-base leading-snug line-clamp-2 group-hover:text-primary-600 transition-colors">Fullstack Web: Nuxt 4 & Laravel 13 API Enterprise</h3>
-                                        </div>
-                                    </div>
-                                    <div class="mt-auto pt-5 border-t border-slate-100">
-                                        <div class="flex justify-between items-center mb-2.5">
-                                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Progress Belajar</span>
-                                            <span class="text-xs font-black text-primary-600">65% Selesai</span>
-                                        </div>
-                                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner">
-                                            <div class="bg-primary-500 h-2 rounded-full transition-all duration-1000" style="width: 65%"></div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col group cursor-pointer relative overflow-hidden">
-                                    <div class="absolute -right-10 -top-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl"></div>
-                                    <div class="flex flex-col sm:flex-row gap-5 mb-6 relative z-10">
-                                        <div class="w-full sm:w-28 aspect-video sm:aspect-square shrink-0 rounded-xl overflow-hidden bg-slate-100 border border-slate-100">
-                                            <img src="https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
-                                        </div>
-                                        <div class="flex flex-col justify-center">
-                                            <span class="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded uppercase tracking-wider mb-2 w-max border border-emerald-100">Lulus</span>
-                                            <h3 class="font-bold text-slate-900 text-base leading-snug line-clamp-2">Dasar Pemrograman Web: HTML, CSS & JS</h3>
-                                        </div>
-                                    </div>
-                                    <div class="mt-auto pt-5 border-t border-slate-100 relative z-10">
-                                        <div class="flex justify-between items-center mb-2.5">
-                                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center"><i class="ph-fill ph-check-circle text-emerald-500 mr-1.5 text-lg"></i> Kelas Selesai</span>
-                                            <span class="text-xs font-black text-emerald-600">100%</span>
-                                        </div>
-                                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner mb-4">
-                                            <div class="bg-emerald-500 h-2 rounded-full transition-all duration-1000" style="width: 100%"></div>
-                                        </div>
-                                        <button @click.stop="showToast('Sertifikat berhasil diunduh ke perangkat Anda!')" class="w-full py-2.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200 hover:bg-emerald-500 hover:text-white transition shadow-sm flex items-center justify-center"><i class="ph-bold ph-certificate mr-2 text-lg"></i> Unduh Sertifikat Digital</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-
-                    <template v-else-if="currentMenu === 'settings'">
-                        <div class="mb-6 animate-fade-in">
-                            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Pengaturan Akun</h1>
-                            <p class="text-sm text-slate-500 mt-1">Perbarui identitas profil dan keamanan sandi Anda di sini.</p>
-                        </div>
-                        <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-6 sm:p-10 animate-slide-up max-w-3xl">
-                            <div class="flex items-center gap-6 mb-8 border-b border-slate-100 pb-8">
-                                <img src="https://i.pravatar.cc/150?img=12" class="w-20 h-20 rounded-full object-cover shadow-sm border border-slate-200 bg-slate-50">
-                                <div>
-                                    <button @click="showToast('Fitur upload gambar akan aktif setelah integrasi API Storage.', 'info')" class="px-5 py-2.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl font-bold text-xs hover:bg-slate-100 transition shadow-sm mb-2 flex items-center"><i class="ph-bold ph-upload-simple mr-1.5 text-lg"></i> Unggah Avatar</button>
-                                    <p class="text-[10px] text-slate-500">Maks. 1MB. Format JPG, PNG.</p>
-                                </div>
-                            </div>
-                            <form @submit.prevent="showToast('Profil berhasil diperbarui!')" class="space-y-6">
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Nama Lengkap</label>
-                                    <input type="text" value="Andi Kusuma" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Email</label>
-                                    <input type="email" value="andi@example.com" disabled class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-400 outline-none cursor-not-allowed">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Password Baru</label>
-                                    <input type="password" placeholder="Masukkan sandi baru..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
-                                </div>
-                                <div class="pt-6 border-t border-slate-100">
-                                    <button type="submit" class="w-full sm:w-auto px-8 py-3.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-primary-600 shadow-md transition-all active:scale-95 flex items-center justify-center"><i class="ph-bold ph-floppy-disk mr-2"></i> Simpan Perubahan</button>
-                                </div>
-                            </form>
-                        </div>
-                    </template>
-                </template>
                 <!-- End Role Templates -->
 
             </div>
             
             <!-- Footer Dashboard -->
             <footer class="mt-8 pt-6 border-t border-slate-200 text-center flex flex-col md:flex-row justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest pb-4 max-w-[1400px] mx-auto w-full">
-                <p>&copy; 2026 EduTech LMS Backend.</p>
+                <p>&copy; 2026 Segara Digital LMS Backend.</p>
                 <div class="flex gap-5 mt-4 md:mt-0">
                     <a href="#" class="hover:text-primary-600 transition">Pusat Bantuan</a>
                     <a href="#" class="hover:text-primary-600 transition">Syarat Ketentuan</a>

@@ -40,6 +40,7 @@ docker compose up -d --build
 - Frontend: http://localhost:3000
 - Backend API (via Nginx): http://localhost:8080
 - Health check API: http://localhost:8080/api/health
+- pgAdmin (setara phpMyAdmin untuk PostgreSQL): http://localhost:5050
 
 3. Hentikan service:
 
@@ -56,6 +57,7 @@ docker compose down -v
 ## URL Penting
 
 - Home: http://localhost:3000/
+- pgAdmin: http://localhost:5050
 - Gemini Frontend (single-file dipecah ke framework): http://localhost:3000/gemini-frontend
 - Gemini Dashboard (single-file dipecah ke framework): http://localhost:3000/gemini-dashboard
 - Login: http://localhost:3000/login
@@ -198,6 +200,12 @@ Cek status container:
 ```bash
 docker compose ps
 ```
+
+Akses pgAdmin:
+
+- Email: `admin@elearning.local`
+- Password: `admin123`
+- Host PostgreSQL saat menambahkan server: `postgres`
 
 Jalankan migration manual:
 

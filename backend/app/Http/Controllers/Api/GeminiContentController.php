@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class GeminiContentController extends Controller
 {
@@ -30,6 +31,7 @@ class GeminiContentController extends Controller
             return [
                 'id' => $course->id,
                 'title' => $course->title,
+                'slug' => $course->slug,
                 'category' => $course->category ?: 'General',
                 'level' => $course->level ?: 'Pemula',
                 'instructor' => $mentorName,
@@ -41,14 +43,14 @@ class GeminiContentController extends Controller
             ];
         })->values();
 
-        $studentsCount = User::query()->where('role', 'student')->count();
-        $mentorCount = User::query()->where('role', 'mentor')->where('status', 'active')->count();
-        $ratingAverage = $mappedCourses->isNotEmpty()
-            ? round(
-                $mappedCourses->avg(fn (array $course): float => (float) $course['rating']) ?: 4.8,
-                1
-            )
-            : 4.8;
+        // Grid statistik landing dibuat marketing-oriented (dummy) sesuai permintaan.
+        $marketingStudentsInThousands = 12;
+        $marketingTotalClasses = max(150, (int) $mappedCourses->count() * 40);
+        $marketingMentors = max(
+            50,
+            User::query()->where('role', 'mentor')->where('status', 'active')->count() + 18
+        );
+        $marketingRating = 4.9;
 
         return response()->json([
             'categories' => $mappedCourses->pluck('category')->unique()->take(6)->values()->all(),
@@ -57,25 +59,25 @@ class GeminiContentController extends Controller
                 [
                     'label' => 'Siswa Belajar',
                     'duration' => '4.0s',
-                    'values' => $this->buildIntegerSlotValues($studentsCount),
-                    'suffix' => $studentsCount >= 1000 ? 'K+' : '+',
+                    'values' => $this->buildIntegerSlotValues($marketingStudentsInThousands),
+                    'suffix' => 'K+',
                 ],
                 [
                     'label' => 'Total Kelas',
                     'duration' => '4.5s',
-                    'values' => $this->buildIntegerSlotValues($mappedCourses->count()),
+                    'values' => $this->buildIntegerSlotValues($marketingTotalClasses),
                     'suffix' => '+',
                 ],
                 [
                     'label' => 'Mentor Aktif',
                     'duration' => '4.2s',
-                    'values' => $this->buildIntegerSlotValues($mentorCount),
+                    'values' => $this->buildIntegerSlotValues($marketingMentors),
                     'suffix' => '+',
                 ],
                 [
                     'label' => 'Rating Global',
                     'duration' => '4.8s',
-                    'values' => $this->buildDecimalSlotValues($ratingAverage),
+                    'values' => $this->buildDecimalSlotValues($marketingRating),
                     'suffix' => '/5',
                 ],
             ],
@@ -135,13 +137,16 @@ class GeminiContentController extends Controller
             ->whereBetween('created_at', [$startOfPreviousMonth, $endOfPreviousMonth])
             ->count();
 
-        $recentRegistrations = PaymentTransaction::query()
-            ->with(['user:id,name,avatar_url', 'course:id,title'])
+        $paidTransactions = PaymentTransaction::query()
+            ->with(['user:id,name,avatar_url', 'course:id,title,slug,category'])
             ->where('status', 'paid')
             ->orderByDesc('paid_at')
             ->orderByDesc('id')
-            ->take(4)
             ->get()
+            ->values();
+
+        $recentRegistrations = $paidTransactions
+            ->take(4)
             ->map(fn (PaymentTransaction $transaction): array => [
                 'name' => $transaction->user?->name ?: 'Siswa Baru',
                 'course' => $transaction->course?->title ?: 'Kelas Premium',
@@ -151,28 +156,95 @@ class GeminiContentController extends Controller
             ->values()
             ->all();
 
-        $instructorCourses = Course::query()
+        $publishedCourses = Course::query()
+            ->with(['mentor:id,name'])
             ->withCount([
                 'paymentTransactions as paid_students_count' => fn ($query) => $query->where('status', 'paid'),
+                'modules',
             ])
             ->withSum([
                 'paymentTransactions as paid_revenue' => fn ($query) => $query->where('status', 'paid'),
             ], 'final_price')
             ->where('is_published', true)
-            ->orderByDesc('paid_revenue')
-            ->orderByDesc('paid_students_count')
-            ->orderByDesc('id')
-            ->take(2)
+            ->orderByDesc('updated_at')
             ->get()
+            ->values();
+
+        $instructorCourses = $publishedCourses
+            ->sortByDesc(fn (Course $course): int => (int) ($course->paid_revenue ?? 0))
+            ->take(6)
             ->map(fn (Course $course): array => [
                 'title' => $course->title,
+                'slug' => $course->slug,
                 'img' => $this->courseImageBySlug($course->slug),
                 'status' => $course->is_published ? 'Published' : 'Draft',
                 'students' => $this->formatCompactNumber((int) ($course->paid_students_count ?? 0)),
                 'revenue' => $this->formatJuta((int) ($course->paid_revenue ?? 0)),
+                'category' => $course->category ?: 'General',
+                'level' => $course->level ?: 'Pemula',
+                'mentor' => $course->mentor?->name ?: 'Tim Mentor',
+                'updatedAt' => optional($course->updated_at)->format('d M Y'),
+                'description' => Str::limit((string) ($course->description ?? ''), 120),
+                'modulesCount' => (int) ($course->modules_count ?? 0),
+                'lessonsCount' => max(0, (int) ($course->modules_count ?? 0) * 4),
+                'completionRate' => min(95, max(40, 45 + (int) floor(((int) ($course->paid_students_count ?? 0)) / 15))),
             ])
             ->values()
             ->all();
+
+        $studentRoleScores = [];
+        foreach ($paidTransactions as $transaction) {
+            $course = $transaction->course;
+            $roadmapKey = $this->resolveRoadmapRole(
+                (string) ($course?->title ?? ''),
+                (string) ($course?->category ?? ''),
+                (string) ($course?->slug ?? '')
+            );
+
+            $studentRoleScores[$roadmapKey] = ($studentRoleScores[$roadmapKey] ?? 0) + 1;
+        }
+
+        $instructorRoleScores = [];
+        foreach ($publishedCourses as $course) {
+            $roadmapKey = $this->resolveRoadmapRole(
+                (string) $course->title,
+                (string) ($course->category ?? ''),
+                (string) $course->slug
+            );
+            $studentsWeight = max(1, (int) ($course->paid_students_count ?? 0));
+            $revenueWeight = max(1, (int) round(((int) ($course->paid_revenue ?? 0)) / 250000));
+
+            $instructorRoleScores[$roadmapKey] = ($instructorRoleScores[$roadmapKey] ?? 0)
+                + $studentsWeight
+                + $revenueWeight;
+        }
+
+        $studentOverviewDistribution = $this->normalizeRoadmapDistribution($studentRoleScores);
+        $instructorOverviewDistribution = $this->normalizeRoadmapDistribution($instructorRoleScores);
+        $dominantStudentRoadmap = $this->dominantRoadmap($studentOverviewDistribution);
+        $dominantInstructorRoadmap = $this->dominantRoadmap($instructorOverviewDistribution);
+
+        $studentActiveCourses = $paidTransactions->pluck('course_id')->filter()->unique()->count();
+        $studentActiveLearners = $paidTransactions->pluck('user_id')->filter()->unique()->count();
+        $studentCompletionRate = min(98, 52 + ($studentActiveCourses * 9));
+        $studentCertificates = (int) floor($studentActiveCourses * 0.65);
+
+        $instructorTotalStudents = (int) $publishedCourses->sum(
+            fn (Course $course): int => (int) ($course->paid_students_count ?? 0)
+        );
+        $instructorTotalRevenue = (int) $publishedCourses->sum(
+            fn (Course $course): int => (int) ($course->paid_revenue ?? 0)
+        );
+        $averageRevenuePerClass = $publishedCourses->count() > 0
+            ? (int) round($instructorTotalRevenue / max(1, $publishedCourses->count()))
+            : 0;
+
+        $notifications = $this->buildNotifications(
+            $paidTransactions,
+            $recentRegistrations,
+            $startOfCurrentMonth,
+            $now
+        );
 
         return response()->json([
             'adminStats' => [
@@ -207,6 +279,65 @@ class GeminiContentController extends Controller
             ],
             'recentRegistrations' => $recentRegistrations,
             'instructorCourses' => $instructorCourses,
+            'notifications' => $notifications,
+            'studentOverview' => [
+                'title' => 'Overview Belajar Siswa',
+                'subtitle' => 'Performa roadmap berdasarkan transaksi kelas berbayar.',
+                'dominantRole' => $dominantStudentRoadmap['label'],
+                'dominantPercent' => $dominantStudentRoadmap['percent'],
+                'roleDistribution' => $studentOverviewDistribution,
+                'metrics' => [
+                    [
+                        'label' => 'Kelas Aktif',
+                        'value' => number_format($studentActiveCourses, 0, ',', '.'),
+                        'helper' => 'Kelas yang sudah dibeli dan dipelajari',
+                    ],
+                    [
+                        'label' => 'Siswa Aktif',
+                        'value' => number_format($studentActiveLearners, 0, ',', '.'),
+                        'helper' => 'Akun siswa dengan transaksi paid',
+                    ],
+                    [
+                        'label' => 'Rata-rata Completion',
+                        'value' => sprintf('%d%%', $studentCompletionRate),
+                        'helper' => 'Estimasi kemajuan lintas kelas',
+                    ],
+                    [
+                        'label' => 'Sertifikat Potensial',
+                        'value' => number_format($studentCertificates, 0, ',', '.'),
+                        'helper' => 'Estimasi sertifikat dari kelas tuntas',
+                    ],
+                ],
+            ],
+            'instructorOverview' => [
+                'title' => 'Overview Performa Instruktur',
+                'subtitle' => 'Distribusi minat siswa pada roadmap kelas yang Anda ajarkan.',
+                'dominantRole' => $dominantInstructorRoadmap['label'],
+                'dominantPercent' => $dominantInstructorRoadmap['percent'],
+                'roleDistribution' => $instructorOverviewDistribution,
+                'metrics' => [
+                    [
+                        'label' => 'Total Siswa',
+                        'value' => $this->formatCompactNumber($instructorTotalStudents),
+                        'helper' => 'Akumulasi peserta kelas berbayar',
+                    ],
+                    [
+                        'label' => 'Kelas Published',
+                        'value' => number_format($publishedCourses->count(), 0, ',', '.'),
+                        'helper' => 'Kelas aktif di katalog Segara Digital',
+                    ],
+                    [
+                        'label' => 'Revenue Kotor',
+                        'value' => $this->formatJuta($instructorTotalRevenue),
+                        'helper' => 'Total pemasukan dari transaksi paid',
+                    ],
+                    [
+                        'label' => 'Rata-rata/Kelas',
+                        'value' => $this->formatJuta($averageRevenuePerClass),
+                        'helper' => 'Pendapatan rata-rata per kelas',
+                    ],
+                ],
+            ],
         ]);
     }
 
@@ -241,16 +372,39 @@ class GeminiContentController extends Controller
                 'hoverColor' => 'group-hover:text-pink-400',
                 'hoverAnim' => 'group-hover:animate-swing group-hover:drop-shadow-[0_0_15px_rgba(236,72,153,0.6)]',
             ],
+            [
+                'icon' => 'ph-duotone ph-device-mobile',
+                'color' => 'text-orange-500',
+                'hoverColor' => 'group-hover:text-orange-400',
+                'hoverAnim' => 'group-hover:animate-bounce-gentle group-hover:drop-shadow-[0_0_15px_rgba(249,115,22,0.6)]',
+            ],
+            [
+                'icon' => 'ph-duotone ph-chart-line-up',
+                'color' => 'text-sky-500',
+                'hoverColor' => 'group-hover:text-sky-400',
+                'hoverAnim' => 'group-hover:animate-pulse-fast group-hover:drop-shadow-[0_0_15px_rgba(14,165,233,0.6)]',
+            ],
+            [
+                'icon' => 'ph-duotone ph-robot',
+                'color' => 'text-indigo-500',
+                'hoverColor' => 'group-hover:text-indigo-400',
+                'hoverAnim' => 'group-hover:animate-fly-up group-hover:drop-shadow-[0_0_15px_rgba(99,102,241,0.6)]',
+            ],
+            [
+                'icon' => 'ph-duotone ph-briefcase',
+                'color' => 'text-amber-500',
+                'hoverColor' => 'group-hover:text-amber-400',
+                'hoverAnim' => 'group-hover:animate-swing group-hover:drop-shadow-[0_0_15px_rgba(245,158,11,0.6)]',
+            ],
         ];
 
-        $grouped = $courses
-            ->groupBy(fn (array $course): string => (string) ($course['category'] ?? 'General'))
+        $groupedByRole = $courses
+            ->groupBy(fn (array $course): string => $this->roleLabelFromCategory((string) ($course['category'] ?? 'General')))
             ->map(fn (Collection $items): int => $items->count())
             ->sortDesc()
-            ->take(4)
-            ->values();
+            ->take(8);
 
-        if ($grouped->isEmpty()) {
+        if ($groupedByRole->isEmpty()) {
             return [
                 [
                     ...$presets[0],
@@ -260,24 +414,284 @@ class GeminiContentController extends Controller
             ];
         }
 
-        $categoryNames = $courses
-            ->groupBy(fn (array $course): string => (string) ($course['category'] ?? 'General'))
-            ->sortByDesc(fn (Collection $items): int => $items->count())
-            ->keys()
-            ->take(4)
-            ->values();
+        $cards = [];
+        $index = 0;
 
-        return $categoryNames
-            ->map(function (string $name, int $index) use ($grouped, $presets): array {
-                $preset = $presets[$index % count($presets)];
+        foreach ($groupedByRole as $name => $count) {
+            $preset = $presets[$index % count($presets)];
+            $cards[] = [
+                ...$preset,
+                'name' => (string) $name,
+                'count' => (int) $count,
+            ];
+            $index++;
+        }
 
-                return [
-                    ...$preset,
-                    'name' => $name,
-                    'count' => (int) ($grouped[$index] ?? 0),
-                ];
-            })
-            ->all();
+        return $cards;
+    }
+
+    private function roleLabelFromCategory(string $category): string
+    {
+        $normalized = Str::lower(trim($category));
+
+        if (Str::contains($normalized, ['web', 'frontend'])) {
+            return 'Frontend Engineer';
+        }
+
+        if (Str::contains($normalized, ['backend', 'database', 'api'])) {
+            return 'Backend Engineer';
+        }
+
+        if (Str::contains($normalized, ['devops', 'cloud', 'server'])) {
+            return 'DevOps Engineer';
+        }
+
+        if (Str::contains($normalized, ['mobile', 'android', 'ios'])) {
+            return 'Mobile Developer';
+        }
+
+        if (Str::contains($normalized, ['ui', 'ux', 'design'])) {
+            return 'UI/UX Designer';
+        }
+
+        if (Str::contains($normalized, ['data', 'analytics', 'machine learning', 'ai'])) {
+            return 'Data Scientist';
+        }
+
+        if (Str::contains($normalized, ['security', 'cyber'])) {
+            return 'Cyber Security Engineer';
+        }
+
+        if (Str::contains($normalized, ['soft skill', 'komunikasi', 'communication'])) {
+            return 'People & Communication Specialist';
+        }
+
+        if (Str::contains($normalized, ['productivity', 'project'])) {
+            return 'Project & Product Specialist';
+        }
+
+        return $category;
+    }
+
+    /**
+     * @param Collection<int, PaymentTransaction> $paidTransactions
+     * @param array<int, array{name: string, course: string, time: string, avatar: string}> $recentRegistrations
+     * @return array<int, array{id: string, title: string, message: string, time: string, tone: string}>
+     */
+    private function buildNotifications(
+        Collection $paidTransactions,
+        array $recentRegistrations,
+        Carbon $startOfCurrentMonth,
+        Carbon $now
+    ): array {
+        $latestPaid = $paidTransactions->first();
+        $pendingTransactions = PaymentTransaction::query()->where('status', 'pending')->count();
+        $paidThisMonth = PaymentTransaction::query()
+            ->where('status', 'paid')
+            ->whereBetween('paid_at', [$startOfCurrentMonth, $now])
+            ->count();
+        $newPublishedCourses = Course::query()
+            ->where('is_published', true)
+            ->whereBetween('published_at', [$startOfCurrentMonth, $now])
+            ->count();
+
+        $notifications = [];
+
+        if ($latestPaid instanceof PaymentTransaction) {
+            $notifications[] = [
+                'id' => sprintf('payment-%d', $latestPaid->id),
+                'title' => 'Pembayaran Baru Terkonfirmasi',
+                'message' => sprintf(
+                    '%s baru menyelesaikan pembayaran untuk kelas %s.',
+                    $latestPaid->user?->name ?: 'Seorang siswa',
+                    $latestPaid->course?->title ?: 'Premium Class'
+                ),
+                'time' => $this->timeAgoLabel($latestPaid->paid_at ?: $latestPaid->created_at ?: $now),
+                'tone' => 'success',
+            ];
+        }
+
+        if ($pendingTransactions > 0) {
+            $notifications[] = [
+                'id' => 'pending-payment',
+                'title' => 'Checkout Menunggu Pembayaran',
+                'message' => sprintf('%d transaksi masih berstatus pending.', $pendingTransactions),
+                'time' => 'Baru saja',
+                'tone' => 'warning',
+            ];
+        }
+
+        $notifications[] = [
+            'id' => 'paid-this-month',
+            'title' => 'Performa Bulan Ini',
+            'message' => sprintf('Total %d transaksi paid tercatat bulan ini.', $paidThisMonth),
+            'time' => 'Update harian',
+            'tone' => 'info',
+        ];
+
+        if ($newPublishedCourses > 0) {
+            $notifications[] = [
+                'id' => 'new-course',
+                'title' => 'Kelas Baru Dipublikasikan',
+                'message' => sprintf('%d kelas baru tayang bulan ini.', $newPublishedCourses),
+                'time' => 'Update katalog',
+                'tone' => 'success',
+            ];
+        }
+
+        if (count($notifications) < 3 && count($recentRegistrations) > 0) {
+            $latestRegistration = $recentRegistrations[0];
+            $notifications[] = [
+                'id' => 'latest-registration',
+                'title' => 'Aktivitas Siswa Terbaru',
+                'message' => sprintf(
+                    '%s baru membeli kelas %s.',
+                    $latestRegistration['name'],
+                    $latestRegistration['course']
+                ),
+                'time' => $latestRegistration['time'],
+                'tone' => 'info',
+            ];
+        }
+
+        return array_slice($notifications, 0, 5);
+    }
+
+    /**
+     * @param array<string, int|float> $scores
+     * @return array<int, array{key: string, label: string, color: string, percent: int}>
+     */
+    private function normalizeRoadmapDistribution(array $scores): array
+    {
+        $metaList = $this->roadmapRoleMeta();
+
+        $baseScores = [];
+        foreach ($metaList as $meta) {
+            $baseScores[$meta['key']] = 0.0;
+        }
+
+        foreach ($scores as $key => $score) {
+            if (! array_key_exists($key, $baseScores)) {
+                continue;
+            }
+            $baseScores[$key] += (float) $score;
+        }
+
+        $totalScore = array_sum($baseScores);
+        if ($totalScore <= 0) {
+            return [
+                ['key' => 'frontend', 'label' => 'Frontend Developer', 'color' => '#3B82F6', 'percent' => 28],
+                ['key' => 'backend', 'label' => 'Backend Developer', 'color' => '#0EA5E9', 'percent' => 22],
+                ['key' => 'devops', 'label' => 'DevOps Engineer', 'color' => '#10B981', 'percent' => 16],
+                ['key' => 'mobile', 'label' => 'Mobile Developer', 'color' => '#F97316', 'percent' => 11],
+                ['key' => 'uiux', 'label' => 'UI/UX Designer', 'color' => '#EC4899', 'percent' => 13],
+                ['key' => 'data', 'label' => 'Data Scientist', 'color' => '#8B5CF6', 'percent' => 10],
+            ];
+        }
+
+        $distribution = [];
+        $runningPercent = 0;
+        $highestKey = 'frontend';
+        $highestValue = -1.0;
+
+        foreach ($metaList as $meta) {
+            $key = $meta['key'];
+            $value = $baseScores[$key] ?? 0.0;
+            $percent = (int) floor(($value / $totalScore) * 100);
+            $runningPercent += $percent;
+
+            if ($value > $highestValue) {
+                $highestValue = $value;
+                $highestKey = $key;
+            }
+
+            $distribution[] = [
+                'key' => $key,
+                'label' => $meta['label'],
+                'color' => $meta['color'],
+                'percent' => $percent,
+            ];
+        }
+
+        $remaining = 100 - $runningPercent;
+        if ($remaining > 0) {
+            foreach ($distribution as &$item) {
+                if ($item['key'] === $highestKey) {
+                    $item['percent'] += $remaining;
+                    break;
+                }
+            }
+            unset($item);
+        }
+
+        return $distribution;
+    }
+
+    /**
+     * @param array<int, array{key: string, label: string, color: string, percent: int}> $distribution
+     * @return array{label: string, percent: int}
+     */
+    private function dominantRoadmap(array $distribution): array
+    {
+        $dominant = collect($distribution)->sortByDesc('percent')->first();
+
+        if (! is_array($dominant)) {
+            return [
+                'label' => 'Frontend Developer',
+                'percent' => 0,
+            ];
+        }
+
+        return [
+            'label' => (string) ($dominant['label'] ?? 'Frontend Developer'),
+            'percent' => (int) ($dominant['percent'] ?? 0),
+        ];
+    }
+
+    /**
+     * @return array<int, array{key: string, label: string, color: string}>
+     */
+    private function roadmapRoleMeta(): array
+    {
+        return [
+            ['key' => 'frontend', 'label' => 'Frontend Developer', 'color' => '#3B82F6'],
+            ['key' => 'backend', 'label' => 'Backend Developer', 'color' => '#0EA5E9'],
+            ['key' => 'devops', 'label' => 'DevOps Engineer', 'color' => '#10B981'],
+            ['key' => 'mobile', 'label' => 'Mobile Developer', 'color' => '#F97316'],
+            ['key' => 'uiux', 'label' => 'UI/UX Designer', 'color' => '#EC4899'],
+            ['key' => 'data', 'label' => 'Data Scientist', 'color' => '#8B5CF6'],
+        ];
+    }
+
+    private function resolveRoadmapRole(string $title, string $category, string $slug): string
+    {
+        $haystack = Str::lower(trim(implode(' ', [$title, $category, $slug])));
+
+        if (Str::contains($haystack, ['frontend', 'nuxt', 'vue', 'javascript', 'html', 'css', 'web'])) {
+            return 'frontend';
+        }
+
+        if (Str::contains($haystack, ['backend', 'api', 'laravel', 'golang', 'php', 'database', 'postgres', 'redis'])) {
+            return 'backend';
+        }
+
+        if (Str::contains($haystack, ['devops', 'docker', 'kubernetes', 'nginx', 'cloud', 'server', 'ci/cd'])) {
+            return 'devops';
+        }
+
+        if (Str::contains($haystack, ['mobile', 'flutter', 'android', 'ios', 'react native'])) {
+            return 'mobile';
+        }
+
+        if (Str::contains($haystack, ['ui', 'ux', 'design', 'figma', 'komunikasi', 'communication'])) {
+            return 'uiux';
+        }
+
+        if (Str::contains($haystack, ['data', 'analytics', 'analysis', 'machine learning', 'ai'])) {
+            return 'data';
+        }
+
+        return 'frontend';
     }
 
     /**
@@ -392,11 +806,25 @@ class GeminiContentController extends Controller
     private function courseImageBySlug(string $slug): string
     {
         return match ($slug) {
-            'project-management-essentials' => 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&q=80',
-            'komunikasi-profesional' => 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&q=80',
+            'project-management-essentials' => 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&q=80',
+            'komunikasi-profesional' => 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=800&q=80',
             'data-analysis-fundamentals' => 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80',
+            'fullstack-web-nuxt-4-laravel-13-api-enterprise' => 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&q=80',
+            'dasar-pemrograman-web-html-css-js' => 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&q=80',
+            'modern-javascript-masterclass-es6-plus' => 'https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&q=80',
+            'mastering-postgresql-17-redis-7-caching' => 'https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=800&q=80',
+            'laravel-sanctum-auth-rest-api-security' => 'https://images.unsplash.com/photo-1555099962-4199c345e5dd?w=800&q=80',
+            'golang-microservices-grpc-architecture' => 'https://images.unsplash.com/photo-1623479322729-28b25c16b011?w=800&q=80',
+            'docker-compose-nginx-reverse-proxy-setup' => 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&q=80',
+            'kubernetes-k8s-cicd-pipelines-mastery' => 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80',
+            'ui-ux-design-system-untuk-aplikasi-saas' => 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?w=800&q=80',
+            'figma-to-code-ui-ux-advanced-prototyping' => 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&q=80',
+            'belajar-fundamental-python-data-science' => 'https://images.unsplash.com/photo-1526379879527-8559ecfcaec0?w=800&q=80',
+            'machine-learning-with-python-scikit-learn' => 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80',
+            'mastering-react-native-2026' => 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&q=80',
+            'flutter-state-management-bloc-riverpod' => 'https://images.unsplash.com/photo-1526498460520-4c246339dccb?w=800&q=80',
+            'cyber-security-fundamental-untuk-web-engineer' => 'https://images.unsplash.com/photo-1510511459019-5dda7724fd87?w=800&q=80',
             default => 'https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=800&q=80',
         };
     }
 }
-

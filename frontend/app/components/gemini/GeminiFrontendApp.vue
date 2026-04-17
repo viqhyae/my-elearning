@@ -162,6 +162,21 @@ const navigate = async (page: string, data: unknown = null) => {
   stateNavigate(page, data)
 }
 
+const goToPayment = async (course: any) => {
+  if (!auth.isAuthenticated.value) {
+    await navigate('login')
+    return
+  }
+
+  const courseId = Number(course?.id || 0)
+  const query = courseId > 0 ? { course_id: String(courseId) } : {}
+
+  await router.push({
+    path: '/payments',
+    query,
+  })
+}
+
 const submitLogin = async () => {
   loginError.value = ''
 
@@ -330,10 +345,12 @@ onMounted(async () => {
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
                 <div class="flex items-center cursor-pointer group" @click="navigate('landing')">
-                    <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-tr from-slate-900 to-slate-700 flex items-center justify-center text-white mr-3 shadow-lg group-hover:scale-105 transition-transform duration-300">
-                        <i class="ph-bold ph-code text-xl md:text-2xl"></i>
-                    </div>
-                    <span class="font-extrabold text-xl md:text-2xl tracking-tight text-slate-900">EduTech.</span>
+                    <img
+                      src="/images/logo-segara-digital.png"
+                      alt="Logo Segara Digital"
+                      class="w-10 h-10 md:w-12 md:h-12 object-contain mr-3 drop-shadow-sm group-hover:scale-105 transition-transform duration-300"
+                    >
+                    <span class="font-extrabold text-xl md:text-2xl tracking-tight text-slate-900">Segara Digital.</span>
                 </div>
                 
                 <div class="hidden lg:flex items-center space-x-1">
@@ -435,7 +452,7 @@ onMounted(async () => {
             <div class="px-4 pt-4 pb-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Perusahaan</div>
             <a href="#" @click.prevent="navigate('about')" class="block font-bold text-base py-2.5 px-4 rounded-xl hover:bg-slate-50 text-slate-600">Tentang Kami</a>
             <a href="#" @click.prevent="navigate('mentors')" class="block font-bold text-base py-2.5 px-4 rounded-xl hover:bg-slate-50 text-slate-600">Instruktur</a>
-            <a href="#" @click.prevent="navigate('career')" class="block font-bold text-base py-2.5 px-4 rounded-xl hover:bg-slate-50 text-slate-600 flex justify-between items-center">Karir EduTech <span class="text-[9px] bg-primary-100 text-primary-600 px-2 py-1 rounded-md">HIRING</span></a>
+            <a href="#" @click.prevent="navigate('career')" class="block font-bold text-base py-2.5 px-4 rounded-xl hover:bg-slate-50 text-slate-600 flex justify-between items-center">Karir Segara Digital <span class="text-[9px] bg-primary-100 text-primary-600 px-2 py-1 rounded-md">HIRING</span></a>
             <a href="#" @click.prevent="navigate('blog')" class="block font-bold text-base py-2.5 px-4 rounded-xl hover:bg-slate-50 text-slate-600">Blog & Artikel</a>
             
             <div class="px-4 pt-4 pb-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Lainnya</div>
@@ -463,85 +480,126 @@ onMounted(async () => {
              1. VIEW: LANDING PAGE
         =============================== -->
         <div v-if="currentPage === 'landing'" class="flex-grow flex flex-col animate-fade">
-            <section @mousemove="onMouseMove" @mouseleave="resetMouse" class="bg-white pt-16 pb-24 relative overflow-hidden flex flex-col justify-center min-h-[85vh]">
-                <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-                    <div class="absolute top-0 right-0 w-[600px] md:w-[800px] h-[600px] md:h-[800px] bg-primary-50/50 rounded-full blur-3xl opacity-70 mix-blend-multiply animate-blob"></div>
-                    <div class="absolute top-0 left-[-100px] w-[500px] h-[500px] bg-purple-50/50 rounded-full blur-3xl opacity-70 mix-blend-multiply animate-blob animation-delay-2000"></div>
-                    
-                    <div class="parallax-wrapper absolute inset-0" :style="{ transform: `translate(${mouseX * 60}px, ${mouseY * 40}px)` }">
-                        <div class="absolute top-[15%] left-[10%] lg:left-[15%] animate-float">
-                            <div class="w-12 h-12 md:w-14 md:h-14 bg-white border border-slate-100 rounded-2xl shadow-xl shadow-emerald-500/10 flex items-center justify-center text-emerald-500 -rotate-6">
-                                <i class="ph-bold ph-code-block text-2xl md:text-3xl"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="parallax-wrapper absolute inset-0" :style="{ transform: `translate(${mouseX * -40}px, ${mouseY * -50}px)` }">
-                        <div class="absolute bottom-[20%] right-[8%] lg:right-[15%] animate-float-delayed">
-                            <div class="w-14 h-14 md:w-16 md:h-16 bg-white border border-slate-100 rounded-2xl shadow-xl shadow-purple-500/10 flex items-center justify-center text-purple-500 rotate-12">
-                                <i class="ph-bold ph-database text-2xl md:text-3xl"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="parallax-wrapper absolute inset-0 hidden md:block" :style="{ transform: `translate(${mouseX * -70}px, ${mouseY * 30}px)` }">
-                        <div class="absolute top-[25%] right-[20%] animate-float-slow">
-                            <div class="w-12 h-12 md:w-14 md:h-14 bg-white border border-slate-100 rounded-full shadow-lg flex items-center justify-center text-blue-500 rotate-12">
-                                <i class="ph-bold ph-cloud-check text-xl md:text-2xl"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="parallax-wrapper absolute inset-0 hidden md:block" :style="{ transform: `translate(${mouseX * 40}px, ${mouseY * -20}px)` }">
-                        <div class="absolute bottom-[30%] left-[18%] animate-float-fast">
-                            <div class="w-10 h-10 md:w-12 md:h-12 bg-white border border-slate-100 rounded-[1rem] shadow-lg flex items-center justify-center text-pink-500 -rotate-12">
-                                <i class="ph-bold ph-paint-brush text-xl md:text-2xl"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="parallax-wrapper absolute inset-0 hidden lg:block" :style="{ transform: `translate(${mouseX * -20}px, ${mouseY * 60}px)` }">
-                        <div class="absolute top-[50%] left-[5%] animate-float-delayed">
-                            <div class="w-10 h-10 bg-white border border-slate-100 rounded-lg shadow-md flex items-center justify-center text-orange-500 rotate-45">
-                                <i class="ph-bold ph-device-mobile text-xl"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="parallax-wrapper absolute inset-0 hidden lg:block" :style="{ transform: `translate(${mouseX * 50}px, ${mouseY * -30}px)` }">
-                        <div class="absolute top-[60%] right-[10%] animate-float">
-                            <div class="w-10 h-10 bg-white border border-slate-100 rounded-full shadow-md flex items-center justify-center text-yellow-500 -rotate-12">
-                                <i class="ph-fill ph-lightning text-xl"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <section @mousemove="onMouseMove" @mouseleave="resetMouse" class="bg-[#f7f2ea] pt-10 md:pt-14 pb-20 md:pb-24 relative overflow-hidden min-h-[90vh] flex items-center border-b border-slate-200/70">
+                <div class="absolute inset-0 hero-grid-pattern opacity-35 pointer-events-none"></div>
+                <div class="absolute inset-0 hero-sunset-wash pointer-events-none"></div>
+                <div class="absolute -top-24 right-[7%] w-72 h-72 md:w-[440px] md:h-[440px] rounded-full border-[24px] border-orange-300/25 pointer-events-none"></div>
+                <div class="absolute -bottom-40 -left-20 w-[460px] h-[460px] bg-cyan-300/20 rounded-full blur-3xl pointer-events-none"></div>
 
-                <div class="max-w-4xl mx-auto px-4 text-center relative z-10">
-                    <div class="inline-flex items-center py-1.5 px-4 rounded-full bg-slate-50 text-slate-700 text-xs font-bold mb-6 md:mb-8 border border-slate-200 shadow-sm">
-                        <span class="w-2 h-2 rounded-full bg-primary-500 mr-2.5 animate-pulse"></span>
-                        Platform LMS Stack Modern #1 di Indonesia
-                    </div>
-                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 mb-6 md:mb-8 leading-[1.15] tracking-tight">
-                        Bangun Karir Impian <br class="hidden md:block">
-                        Dengan <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 via-blue-500 to-purple-600">Skill Industri Nyata</span>
-                    </h1>
-                    <p class="text-slate-500 max-w-2xl mx-auto mb-10 text-base md:text-lg leading-relaxed font-medium">
-                        Berhenti menonton tutorial tanpa arah. Kuasai ekosistem Nuxt, Laravel, Docker, dan DevOps dengan praktik langsung standar perusahaan teknologi.
-                    </p>
-                    <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
-                        <button @click="navigate(isLoggedIn ? 'dashboard' : 'category')" class="w-full sm:w-auto px-8 py-3.5 md:py-4 bg-slate-900 text-white rounded-2xl font-bold text-base md:text-lg hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/30 transition-all active:scale-95">
-                            Eksplorasi Katalog
-                        </button>
-                        <button @click="navigate('roadmap')" class="w-full sm:w-auto px-8 py-3.5 md:py-4 bg-white border-2 border-slate-200 text-slate-700 rounded-2xl font-bold text-base md:text-lg hover:border-slate-300 hover:bg-slate-50 transition-all active:scale-95 flex items-center justify-center group">
-                            <i class="ph-bold ph-map-pin-line text-xl mr-2 text-primary-600 group-hover:scale-110 transition-transform"></i> Lihat Roadmap
-                        </button>
-                    </div>
-                    
-                    <div class="mt-16 md:mt-20 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-3xl mx-auto">
-                        <div v-for="(stat, index) in stats" :key="index" class="text-center p-2 bg-white/40 backdrop-blur-sm rounded-2xl border border-white shadow-sm">
-                            <div class="text-2xl md:text-3xl font-black text-slate-900 mb-1 flex justify-center items-end tracking-tighter">
-                                <span class="slot-wrap"><span class="slot-col slot-roll" :style="{ animationDuration: stat.duration }">
-                                    <span v-for="val in stat.values" :key="val">{{ val }}</span>
-                                </span></span>
-                                <span class="text-sm md:text-base text-slate-500 ml-1 mb-0.5">{{ stat.suffix }}</span>
+                <div class="max-w-7xl mx-auto px-4 relative z-10 w-full">
+                    <div class="grid lg:grid-cols-[1.08fr_0.92fr] gap-10 lg:gap-14 items-center">
+                        <div class="relative">
+                            <div class="inline-flex items-center py-1.5 px-4 rounded-full bg-white/95 text-slate-700 text-xs font-bold mb-6 border border-slate-200 shadow-sm">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2.5 animate-pulse"></span>
+                                Belajar Bersama Komunitas Digital Indonesia
                             </div>
-                            <div class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest">{{ stat.label }}</div>
+
+                            <h1 class="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 mb-6 leading-[1.06] tracking-tight">
+                                Belajar Bareng, Skill Makin Kuat,
+                                <span class="block text-transparent bg-clip-text bg-gradient-to-r from-[#ea580c] via-[#0f172a] to-[#0284c7]">Siap Menang di Karier Digital</span>
+                            </h1>
+                            <p class="text-slate-600 mb-8 text-base md:text-lg leading-relaxed max-w-2xl font-medium">
+                                Segara Digital adalah ruang belajar kolaboratif untuk siapa saja: engineering, data, UI/UX, digital marketing, product, dan banyak topik lain yang relevan dengan kebutuhan industri.
+                            </p>
+
+                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-8">
+                                <button @click="navigate(isLoggedIn ? 'dashboard' : 'category')" class="px-8 py-3.5 bg-slate-900 text-white rounded-2xl font-bold text-base hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/30 transition-all active:scale-95">
+                                    Mulai Belajar Sekarang
+                                </button>
+                                <button @click="navigate('roadmap')" class="px-8 py-3.5 bg-white border-2 border-slate-200 text-slate-700 rounded-2xl font-bold text-base hover:border-primary-300 hover:bg-primary-50/40 transition-all active:scale-95 flex items-center justify-center group">
+                                    <i class="ph-bold ph-compass text-xl mr-2 text-primary-600 group-hover:rotate-12 transition-transform"></i> Cek Role Karir
+                                </button>
+                            </div>
+
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <div v-for="(stat, index) in stats" :key="index" class="p-3 bg-white/90 rounded-2xl border border-slate-200 shadow-sm text-center">
+                                    <div class="text-xl md:text-2xl font-black text-slate-900 mb-1 flex items-end justify-center tracking-tight">
+                                        <span class="slot-wrap"><span class="slot-col slot-roll" :style="{ animationDuration: stat.duration }">
+                                            <span v-for="val in stat.values" :key="val">{{ val }}</span>
+                                        </span></span>
+                                        <span class="text-xs md:text-sm text-slate-500 ml-1 mb-0.5">{{ stat.suffix }}</span>
+                                    </div>
+                                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ stat.label }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="relative lg:pl-4">
+                            <div class="parallax-wrapper absolute -left-3 md:-left-10 top-12 z-30 hidden sm:block" :style="{ transform: `translate(${mouseX * -20}px, ${mouseY * 10}px)` }">
+                                <div class="bg-white/95 rounded-2xl px-4 py-3 border border-slate-200 shadow-xl rotate-[-6deg]">
+                                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Weekly Goal</p>
+                                    <p class="text-xs font-bold text-slate-900 mt-1">Selesaikan 1 mini app</p>
+                                </div>
+                            </div>
+
+                            <div class="relative rotate-[-2deg]">
+                                <div class="relative bg-white/95 rounded-[2.3rem] p-5 md:p-7 border border-slate-200 shadow-[0_30px_80px_rgba(15,23,42,0.18)] overflow-hidden">
+                                    <div class="absolute -right-16 -top-16 w-44 h-44 rounded-full bg-amber-300/35 blur-2xl"></div>
+                                    <div class="absolute -left-10 bottom-4 w-40 h-40 rounded-full bg-cyan-300/25 blur-2xl"></div>
+                                    <div class="absolute top-4 right-4 bg-slate-900 text-white px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider">Interview Drill</div>
+
+                                    <div class="relative bg-gradient-to-br from-[#0f172a] via-[#1d4ed8] to-[#0284c7] rounded-[1.8rem] p-5 md:p-7 overflow-hidden">
+                                        <div class="absolute inset-0 hero-panel-glow"></div>
+
+                                        <div class="parallax-wrapper absolute top-4 left-4 z-20" :style="{ transform: `translate(${mouseX * -18}px, ${mouseY * -12}px)` }">
+                                            <div class="bg-white/90 backdrop-blur rounded-xl px-3 py-2 border border-white shadow-lg">
+                                                <p class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Live Review</p>
+                                                <p class="text-xs font-bold text-slate-900">Rabu 19:00 WIB</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="parallax-wrapper absolute top-5 right-4 z-20" :style="{ transform: `translate(${mouseX * 14}px, ${mouseY * -8}px)` }">
+                                            <div class="w-11 h-11 bg-amber-300/95 rounded-xl border border-amber-100 flex items-center justify-center shadow-lg text-slate-900">
+                                                <i class="ph-fill ph-lightning text-xl"></i>
+                                            </div>
+                                        </div>
+
+                                        <div class="relative z-10 pt-7 md:pt-9">
+                                            <div class="w-[285px] sm:w-[330px] mx-auto">
+                                                <svg viewBox="0 0 360 430" class="w-full h-auto drop-shadow-[0_28px_38px_rgba(15,23,42,0.45)]">
+                                                    <defs>
+                                                        <linearGradient id="heroHoodieGradientVue" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                            <stop offset="0%" stop-color="#f97316"/>
+                                                            <stop offset="100%" stop-color="#ea580c"/>
+                                                        </linearGradient>
+                                                        <linearGradient id="heroSkinGradientVue" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                            <stop offset="0%" stop-color="#f8c7a2"/>
+                                                            <stop offset="100%" stop-color="#e8aa82"/>
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <ellipse cx="184" cy="386" rx="102" ry="20" fill="rgba(15,23,42,0.24)"/>
+                                                    <path d="M118 220c0-44 29-76 66-76s66 32 66 76v80c0 20-16 36-36 36h-60c-20 0-36-16-36-36z" fill="url(#heroHoodieGradientVue)"/>
+                                                    <path d="M154 163c0-18 14-32 31-32s31 14 31 32v46c0 17-14 31-31 31s-31-14-31-31z" fill="url(#heroSkinGradientVue)"/>
+                                                    <path d="M146 166c3-33 24-52 49-52 29 0 50 22 50 56 0 14-4 26-10 35-7-15-20-28-37-33-16 4-31 15-42 31-6-10-10-22-10-37z" fill="#111827"/>
+                                                    <path d="M170 234h30l12 22h-54z" fill="#ffedd5"/>
+                                                    <rect x="106" y="266" width="156" height="94" rx="16" fill="#0f172a"/>
+                                                    <rect x="114" y="274" width="140" height="66" rx="12" fill="#111827"/>
+                                                    <rect x="123" y="283" width="122" height="48" rx="9" fill="#f97316"/>
+                                                    <circle cx="184" cy="316" r="9" fill="#ffedd5"/>
+                                                    <path d="M94 248c-14 10-20 25-17 42 3 17 16 28 32 29 8 0 15-2 21-7l-13-29z" fill="#ea580c"/>
+                                                    <path d="M272 248c14 10 20 25 17 42-3 17-16 28-32 29-8 0-15-2-21-7l13-29z" fill="#ea580c"/>
+                                                </svg>
+                                            </div>
+                                        </div>
+
+                                        <div class="absolute bottom-4 right-4 z-20 bg-white/92 rounded-xl px-3 py-2 border border-white shadow-lg max-w-[188px]">
+                                            <p class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Progress Portfolio</p>
+                                            <p class="text-xs font-bold text-slate-900 mt-0.5">27 proyek lulus review minggu ini</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-3 mt-4">
+                                        <div class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                                            <p class="text-[10px] text-slate-400 font-black uppercase tracking-wider">Code Review</p>
+                                            <p class="text-xs font-bold text-slate-900 mt-0.5">1-on-1 feedback</p>
+                                        </div>
+                                        <div class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                                            <p class="text-[10px] text-slate-400 font-black uppercase tracking-wider">Career Coach</p>
+                                            <p class="text-xs font-bold text-slate-900 mt-0.5">CV & mock interview</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -567,8 +625,8 @@ onMounted(async () => {
             <section class="py-20 bg-slate-50 relative border-t border-slate-200/50">
                 <div class="max-w-7xl mx-auto px-4">
                     <div class="text-center max-w-2xl mx-auto mb-12">
-                        <h2 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-3">Topik Terpopuler</h2>
-                        <p class="text-slate-500 text-base">Pilih spesialisasi yang ingin Anda kuasai dan mulai pelajari sekarang.</p>
+                        <h2 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-3">Pilih Role yang Ingin Anda Tekuni</h2>
+                        <p class="text-slate-500 text-base">Tentukan jalur karir teknologi Anda, lalu mulai belajar dari kurikulum yang paling relevan.</p>
                     </div>
                     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                         <div v-for="(cat, idx) in categoriesPreview" :key="idx" @click="navigate('category', cat.name)" class="bg-white p-6 rounded-[1.5rem] border border-slate-200 hover:border-primary-300 hover:shadow-lg transition-all duration-300 cursor-pointer group text-center flex flex-col items-center">
@@ -586,7 +644,7 @@ onMounted(async () => {
                 <div class="max-w-7xl mx-auto px-4">
                     <div class="text-center max-w-3xl mx-auto mb-14">
                         <span class="text-primary-600 font-bold text-xs uppercase tracking-widest mb-3 block">Benefit Platform</span>
-                        <h2 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-4">Mengapa Memilih EduTech?</h2>
+                        <h2 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-4">Mengapa Memilih Segara Digital?</h2>
                         <p class="text-slate-500 text-base">Sistem belajar yang didesain agar Anda lebih cepat paham dan siap kerja.</p>
                     </div>
                     <div class="grid md:grid-cols-3 gap-6 md:gap-8">
@@ -646,6 +704,72 @@ onMounted(async () => {
                 </div>
             </section>
 
+            <section class="py-20 bg-gradient-to-b from-white to-slate-50 border-y border-slate-100">
+                <div class="max-w-7xl mx-auto px-4">
+                    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-10">
+                        <div class="max-w-2xl">
+                            <span class="text-primary-600 font-bold text-xs uppercase tracking-widest mb-3 block">Konten Tambahan</span>
+                            <h2 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-3">Event Belajar & Insight Terbaru</h2>
+                            <p class="text-slate-500 text-base">Ikuti webinar praktik dan baca insight karir untuk mempercepat pertumbuhan skill Anda setiap minggu.</p>
+                        </div>
+                        <div class="flex flex-wrap gap-3">
+                            <button @click="navigate('webinar')" class="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-primary-600 transition">Lihat Webinar</button>
+                            <button @click="navigate('blog')" class="px-5 py-2.5 bg-white text-slate-700 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition">Baca Insight</button>
+                        </div>
+                    </div>
+
+                    <div class="grid lg:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-6 md:p-7">
+                            <div class="flex items-center justify-between mb-5">
+                                <h3 class="text-lg font-black text-slate-900">Webinar Mendatang</h3>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ webinars.length }} Event</span>
+                            </div>
+                            <div class="space-y-4">
+                                <article
+                                  v-for="webinar in webinars.slice(0, 3)"
+                                  :key="webinar.title"
+                                  @click="navigate('webinar-detail', webinar)"
+                                  class="flex gap-4 p-3 rounded-xl border border-slate-100 hover:border-primary-200 hover:bg-primary-50/40 transition cursor-pointer"
+                                >
+                                    <div class="w-20 h-20 rounded-xl overflow-hidden bg-slate-100 shrink-0">
+                                        <img :src="webinar.img" :alt="webinar.title" class="w-full h-full object-cover">
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-[10px] font-bold uppercase tracking-wider text-primary-600 mb-1">{{ webinar.type }}</p>
+                                        <h4 class="font-bold text-slate-900 text-sm leading-snug line-clamp-2">{{ webinar.title }}</h4>
+                                        <p class="text-[11px] text-slate-500 mt-1">{{ webinar.date }}</p>
+                                    </div>
+                                </article>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-6 md:p-7">
+                            <div class="flex items-center justify-between mb-5">
+                                <h3 class="text-lg font-black text-slate-900">Insight Karir Baru</h3>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ blogPosts.length }} Artikel</span>
+                            </div>
+                            <div class="space-y-4">
+                                <article
+                                  v-for="post in blogPosts.slice(0, 3)"
+                                  :key="post.title"
+                                  @click="navigate('blog-detail', post)"
+                                  class="flex gap-4 p-3 rounded-xl border border-slate-100 hover:border-primary-200 hover:bg-primary-50/40 transition cursor-pointer"
+                                >
+                                    <div class="w-20 h-20 rounded-xl overflow-hidden bg-slate-100 shrink-0">
+                                        <img :src="post.img" :alt="post.title" class="w-full h-full object-cover">
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">{{ post.category }} • {{ post.readTime }}</p>
+                                        <h4 class="font-bold text-slate-900 text-sm leading-snug line-clamp-2">{{ post.title }}</h4>
+                                        <p class="text-[11px] text-slate-500 mt-1 line-clamp-2">{{ post.excerpt }}</p>
+                                    </div>
+                                </article>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <section class="py-20 bg-slate-50 relative overflow-hidden border-b border-slate-200">
                 <div class="max-w-7xl mx-auto px-4 text-center mb-14 relative z-10">
                     <h2 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-3">Langkah Tepat Menuju Karir</h2>
@@ -692,7 +816,7 @@ onMounted(async () => {
                 <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-5 mb-8">
                     <div>
                         <span class="inline-flex items-center py-1.5 px-4 rounded-full bg-primary-100 text-primary-700 text-xs font-bold mb-4 border border-primary-200">
-                            Katalog EduTech
+                            Katalog Segara Digital
                         </span>
                         <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-2">Temukan Kelas Sesuai Target Karir</h1>
                         <p class="text-slate-500 text-sm md:text-base max-w-2xl">Filter kelas berdasarkan kategori, level, dan kata kunci untuk menemukan materi paling relevan.</p>
@@ -865,6 +989,52 @@ onMounted(async () => {
                             </div>
                         </div>
                     </div>
+
+                    <aside class="lg:col-span-1 space-y-6 lg:sticky lg:top-24">
+                        <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-6">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Checkout Cepat</p>
+                            <h3 class="text-2xl font-black text-slate-900 mb-1">{{ activeCourse.price }}</h3>
+                            <p class="text-xs text-slate-500 mb-6">Akses seumur hidup, materi update otomatis, dan sertifikat digital resmi.</p>
+
+                            <button
+                                @click="goToPayment(activeCourse)"
+                                class="w-full py-3.5 rounded-xl font-bold text-sm shadow-md transition active:scale-95 flex items-center justify-center"
+                                :class="isLoggedIn ? 'bg-primary-600 text-white hover:bg-primary-700' : 'bg-slate-900 text-white hover:bg-primary-600'"
+                            >
+                                <i class="ph-bold ph-credit-card mr-2 text-lg"></i>
+                                {{ isLoggedIn ? 'Lanjut ke Pembayaran' : 'Masuk untuk Pembayaran' }}
+                            </button>
+
+                            <button
+                                @click="navigate('category', activeCourse.category)"
+                                class="w-full mt-3 py-3 rounded-xl border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition"
+                            >
+                                Lihat Kelas Serupa
+                            </button>
+                        </div>
+
+                        <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-6">
+                            <h4 class="text-sm font-black text-slate-900 mb-4">Yang Anda Dapatkan</h4>
+                            <div class="space-y-3 text-xs font-semibold text-slate-600">
+                                <div class="flex items-center">
+                                    <i class="ph-fill ph-check-circle text-emerald-500 text-lg mr-2"></i>
+                                    Materi video HD + modul praktikum
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="ph-fill ph-check-circle text-emerald-500 text-lg mr-2"></i>
+                                    Akses forum diskusi instruktur
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="ph-fill ph-check-circle text-emerald-500 text-lg mr-2"></i>
+                                    Sertifikat kelulusan terverifikasi
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="ph-fill ph-check-circle text-emerald-500 text-lg mr-2"></i>
+                                    Bonus roadmap karir sesuai role
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
                 </div>
             </div>
         </div>
@@ -1169,7 +1339,7 @@ onMounted(async () => {
                 </div>
 
                 <div class="text-center mb-8 border-b border-slate-200 pb-4 max-w-5xl mx-auto">
-                    <h2 class="text-2xl font-black text-slate-900">Daftar Instruktur EduTech</h2>
+                    <h2 class="text-2xl font-black text-slate-900">Daftar Instruktur Segara Digital</h2>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12 mt-10">
@@ -1200,7 +1370,7 @@ onMounted(async () => {
                     <div class="relative z-10">
                         <i class="ph-duotone ph-chalkboard-teacher text-5xl mb-4 text-primary-400 inline-block"></i>
                         <h2 class="text-3xl font-black text-white mb-4">Punya Passion Mengajar?</h2>
-                        <p class="text-slate-400 text-sm md:text-base max-w-xl mx-auto mb-8">Bantu ribuan talenta digital Indonesia meraih mimpi mereka sekaligus dapatkan penghasilan tambahan yang kompetitif. Bergabunglah bersama puluhan expert lainnya di EduTech.</p>
+                        <p class="text-slate-400 text-sm md:text-base max-w-xl mx-auto mb-8">Bantu ribuan talenta digital Indonesia meraih mimpi mereka sekaligus dapatkan penghasilan tambahan yang kompetitif. Bergabunglah bersama puluhan expert lainnya di Segara Digital.</p>
                         <button @click="navigate('join-mentor')" class="px-8 py-3.5 bg-primary-600 text-white rounded-xl font-bold text-sm hover:bg-primary-500 transition shadow-lg active:scale-95">Daftar Menjadi Instruktur</button>
                     </div>
                 </div>
@@ -1290,7 +1460,7 @@ onMounted(async () => {
                             </div>
 
                             <div>
-                                <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">Mengapa Anda Ingin Mengajar di EduTech? <span class="text-red-500">*</span></label>
+                                <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">Mengapa Anda Ingin Mengajar di Segara Digital? <span class="text-red-500">*</span></label>
                                 <textarea required rows="4" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-primary-500/50 transition-all text-sm font-medium text-slate-800 resize-none" placeholder="Ceritakan motivasi singkat Anda serta pengalaman mengajar jika ada..."></textarea>
                             </div>
 
@@ -1317,7 +1487,7 @@ onMounted(async () => {
                 <div class="max-w-3xl mx-auto px-4 text-center mb-16">
                     <span class="inline-flex items-center py-1.5 px-4 rounded-full bg-white text-slate-700 text-xs font-bold mb-4 border border-slate-200 shadow-sm"><i class="ph-fill ph-star mr-1 text-yellow-400"></i> Ulasan Nyata Siswa</span>
                     <h1 class="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">Kisah Sukses <span class="text-primary-600">Alumni</span></h1>
-                    <p class="text-slate-500 text-base">Ribuan karir telah ditransformasi. Berikut adalah apa yang mereka katakan setelah menerapkan materi dari EduTech.</p>
+                    <p class="text-slate-500 text-base">Ribuan karir telah ditransformasi. Berikut adalah apa yang mereka katakan setelah menerapkan materi dari Segara Digital.</p>
                     
                     <!-- NEW: Rating Platform Badge -->
                     <div class="mt-8 inline-flex items-center justify-center space-x-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
@@ -1567,7 +1737,7 @@ onMounted(async () => {
                 <div class="flex items-center text-sm text-slate-500 font-medium mb-10 pb-8 border-b border-slate-100">
                     <img src="https://i.pravatar.cc/150?img=11" class="w-10 h-10 rounded-full mr-3">
                     <div>
-                        <p class="text-slate-900 font-bold">Tim Redaksi EduTech</p>
+                        <p class="text-slate-900 font-bold">Tim Redaksi Segara Digital</p>
                         <p>Diterbitkan pada: 2 Hari yang lalu - {{ activePost.readTime }} read</p>
                     </div>
                 </div>
@@ -1578,7 +1748,7 @@ onMounted(async () => {
 
                 <!-- Blog Content -->
                 <div class="prose prose-slate max-w-none text-slate-700 leading-relaxed text-base md:text-lg">
-                    <p class="mb-6"><span class="font-bold text-xl text-slate-900">EduTech -</span> {{ activePost.excerpt }} Artikel ini akan membahas langkah-langkah praktis dan konsep inti yang perlu Anda ketahui.</p>
+                    <p class="mb-6"><span class="font-bold text-xl text-slate-900">Segara Digital -</span> {{ activePost.excerpt }} Artikel ini akan membahas langkah-langkah praktis dan konsep inti yang perlu Anda ketahui.</p>
                     
                     <h3 class="text-2xl font-bold text-slate-900 mt-8 mb-4">Kenapa Anda Harus Belajar Ini?</h3>
                     <p class="mb-6">Di era teknologi modern, skalabilitas dan efisiensi adalah kunci. Teknologi yang kita bahas tidak hanya meningkatkan produktivitas tim, tetapi juga menjamin performa aplikasi di tahap *production* yang sangat krusial bagi kepuasan pengguna akhir (User Experience).</p>
@@ -1628,11 +1798,11 @@ onMounted(async () => {
                 <div class="text-center mb-16 max-w-3xl mx-auto">
                     <span class="inline-flex items-center py-1.5 px-4 rounded-full bg-primary-50 text-primary-700 text-xs font-bold mb-4 border border-primary-100">Our Story</span>
                     <h1 class="text-4xl md:text-5xl font-black text-slate-900 mb-6 tracking-tight">Misi Kami Mencetak <span class="text-primary-600">1 Juta</span> Talenta Digital Indonesia</h1>
-                    <p class="text-slate-500 text-lg leading-relaxed">EduTech didirikan pada tahun 2024 untuk memecahkan masalah kesenjangan antara pendidikan akademis konvensional dengan kebutuhan keahlian (*skill*) yang nyata di industri teknologi saat ini.</p>
+                    <p class="text-slate-500 text-lg leading-relaxed">Segara Digital didirikan pada tahun 2024 untuk memecahkan masalah kesenjangan antara pendidikan akademis konvensional dengan kebutuhan keahlian (*skill*) yang nyata di industri teknologi saat ini.</p>
                 </div>
                 
                 <div class="rounded-[3rem] overflow-hidden aspect-video md:aspect-[21/9] mb-20 shadow-2xl relative">
-                    <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2000" alt="Tim EduTech" class="w-full h-full object-cover">
+                    <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2000" alt="Tim Segara Digital" class="w-full h-full object-cover">
                 </div>
 
                 <div class="grid md:grid-cols-3 gap-8 text-center mb-24 border-y border-slate-100 py-12">
@@ -1653,7 +1823,7 @@ onMounted(async () => {
                 <!-- NEW: Core Values Section -->
                 <div class="mb-24">
                     <div class="text-center mb-12">
-                        <h2 class="text-3xl font-black text-slate-900 mb-4">Nilai Inti EduTech</h2>
+                        <h2 class="text-3xl font-black text-slate-900 mb-4">Nilai Inti Segara Digital</h2>
                         <p class="text-slate-500 max-w-2xl mx-auto">Kami berpegang teguh pada prinsip-prinsip ini dalam setiap fitur dan baris kode yang kami ajarkan.</p>
                     </div>
                     <div class="grid sm:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -1691,7 +1861,7 @@ onMounted(async () => {
                 <!-- NEW: Culture Gallery -->
                 <div class="text-center mb-10">
                     <h2 class="text-3xl font-black text-slate-900 mb-4">Galeri & Kehidupan Kami</h2>
-                    <p class="text-slate-500 max-w-2xl mx-auto">Sekilas tentang kehidupan tim di balik layar pengembangan EduTech LMS.</p>
+                    <p class="text-slate-500 max-w-2xl mx-auto">Sekilas tentang kehidupan tim di balik layar pengembangan Segara Digital LMS.</p>
                 </div>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div class="aspect-square rounded-2xl overflow-hidden shadow-sm hover:scale-105 transition-transform"><img src="https://images.unsplash.com/photo-1522071901873-411886a10004?q=80&w=400" class="w-full h-full object-cover"></div>
@@ -1729,7 +1899,7 @@ onMounted(async () => {
                     <div class="absolute -right-20 -top-20 w-64 h-64 bg-primary-500/30 rounded-full blur-3xl"></div>
                     <div class="relative z-10">
                         <span class="inline-flex items-center py-1.5 px-4 rounded-full bg-white/10 border border-white/20 text-xs font-bold mb-5">Selamat Datang Kembali</span>
-                        <h2 class="text-3xl md:text-4xl font-black leading-tight mb-4">Akses Dashboard EduTech Anda</h2>
+                        <h2 class="text-3xl md:text-4xl font-black leading-tight mb-4">Akses Dashboard Segara Digital Anda</h2>
                         <p class="text-slate-300 text-sm md:text-base mb-8">Masuk untuk melanjutkan progress belajar, membuka sertifikat, dan melihat transaksi terbaru.</p>
                         <div class="space-y-3 text-xs md:text-sm">
                             <div class="flex items-center"><i class="ph-fill ph-check-circle text-emerald-400 mr-2"></i> Sinkronisasi progres lintas perangkat</div>
@@ -1783,7 +1953,7 @@ onMounted(async () => {
                     <div class="w-16 h-16 mx-auto rounded-2xl bg-primary-50 border border-primary-100 text-primary-600 flex items-center justify-center text-3xl mb-4">
                         <i class="ph-duotone ph-user-plus"></i>
                     </div>
-                    <h1 class="text-3xl font-black text-slate-900 mb-2">Daftar Akun EduTech</h1>
+                    <h1 class="text-3xl font-black text-slate-900 mb-2">Daftar Akun Segara Digital</h1>
                     <p class="text-slate-500 text-sm md:text-base">Buat akun baru dan langsung masuk ke dashboard belajar Anda.</p>
                 </div>
 
@@ -1824,7 +1994,7 @@ onMounted(async () => {
 
                     <label class="md:col-span-2 flex items-start text-sm text-slate-600 cursor-pointer">
                         <input v-model="registerAgree" type="checkbox" class="mt-0.5 mr-3 rounded border-slate-300 text-primary-600 focus:ring-primary-500">
-                        Saya menyetujui syarat penggunaan dan kebijakan privasi EduTech.
+                        Saya menyetujui syarat penggunaan dan kebijakan privasi Segara Digital.
                     </label>
 
                     <p v-if="registerNotice" class="md:col-span-2 text-sm font-semibold rounded-xl px-4 py-3 border" :class="registerNoticeTone === 'error' ? 'text-red-700 bg-red-50 border-red-100' : registerNoticeTone === 'success' ? 'text-emerald-700 bg-emerald-50 border-emerald-100' : 'text-amber-700 bg-amber-50 border-amber-100'">
@@ -1848,7 +2018,7 @@ onMounted(async () => {
                     <i class="ph-duotone ph-seal-check text-5xl text-primary-500"></i>
                 </div>
                 <h1 class="text-3xl font-black text-slate-900 mb-4">Verifikasi Sertifikat</h1>
-                <p class="text-slate-500 mb-10 text-sm max-w-md mx-auto">Pastikan keaslian sertifikat lulusan EduTech dengan memasukkan Credential ID yang tertera pada dokumen.</p>
+                <p class="text-slate-500 mb-10 text-sm max-w-md mx-auto">Pastikan keaslian sertifikat lulusan Segara Digital dengan memasukkan Credential ID yang tertera pada dokumen.</p>
                 
                 <div class="relative max-w-md mx-auto mb-4">
                     <input type="text" placeholder="Contoh: EDT-2026-XYZ123" class="w-full pl-5 pr-32 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 font-medium text-slate-700 placeholder-slate-400">
@@ -1908,7 +2078,7 @@ onMounted(async () => {
                 <div class="space-y-8 text-slate-600 leading-relaxed text-sm md:text-base">
                     <section>
                         <h2 class="text-xl font-bold text-slate-900 mb-3">1. Penerimaan Persyaratan</h2>
-                        <p>Dengan mendaftar, mengakses, atau menggunakan platform EduTech LMS, Anda secara sadar setuju untuk terikat dengan Syarat dan Ketentuan ini. Jika Anda tidak setuju dengan bagian mana pun dari ketentuan ini, Anda tidak diperkenankan untuk menggunakan layanan kami.</p>
+                        <p>Dengan mendaftar, mengakses, atau menggunakan platform Segara Digital LMS, Anda secara sadar setuju untuk terikat dengan Syarat dan Ketentuan ini. Jika Anda tidak setuju dengan bagian mana pun dari ketentuan ini, Anda tidak diperkenankan untuk menggunakan layanan kami.</p>
                     </section>
 
                     <section>
@@ -1922,7 +2092,7 @@ onMounted(async () => {
 
                     <section>
                         <h2 class="text-xl font-bold text-slate-900 mb-3">3. Akses Kelas & Lisensi Konten</h2>
-                        <p class="mb-3">EduTech memberikan Anda lisensi terbatas, non-eksklusif, dan tidak dapat dialihkan untuk mengakses dan melihat materi pembelajaran murni untuk keperluan pendidikan pribadi dan non-komersial.</p>
+                        <p class="mb-3">Segara Digital memberikan Anda lisensi terbatas, non-eksklusif, dan tidak dapat dialihkan untuk mengakses dan melihat materi pembelajaran murni untuk keperluan pendidikan pribadi dan non-komersial.</p>
                         <p>Anda dilarang keras untuk mengunduh (selain materi pendukung yang disediakan secara eksplisit), merekam layar, mereproduksi, mendistribusikan ulang, atau menjual kembali konten video maupun dokumen yang ada di platform ini.</p>
                     </section>
 
@@ -1937,7 +2107,7 @@ onMounted(async () => {
 
                     <section>
                         <h2 class="text-xl font-bold text-slate-900 mb-3">5. Perubahan Layanan</h2>
-                        <p>EduTech berhak untuk mengubah, menangguhkan, atau menghentikan fitur platform apa pun kapan saja secara sepihak. Kami juga dapat merevisi Syarat & Ketentuan ini secara berkala. Perubahan material akan diberitahukan melalui email yang terdaftar atau pengumuman di dashboard platform.</p>
+                        <p>Segara Digital berhak untuk mengubah, menangguhkan, atau menghentikan fitur platform apa pun kapan saja secara sepihak. Kami juga dapat merevisi Syarat & Ketentuan ini secara berkala. Perubahan material akan diberitahukan melalui email yang terdaftar atau pengumuman di dashboard platform.</p>
                     </section>
                 </div>
             </div>
@@ -1960,7 +2130,7 @@ onMounted(async () => {
 
                 <div class="space-y-8 text-slate-600 leading-relaxed text-sm md:text-base">
                     <div class="bg-blue-50 text-blue-800 p-5 rounded-2xl text-sm border border-blue-100 font-medium">
-                        Privasi Anda adalah prioritas utama kami. Dokumen ini menjelaskan bagaimana EduTech mengumpulkan, menggunakan, dan melindungi data pribadi Anda saat menggunakan platform kami.
+                        Privasi Anda adalah prioritas utama kami. Dokumen ini menjelaskan bagaimana Segara Digital mengumpulkan, menggunakan, dan melindungi data pribadi Anda saat menggunakan platform kami.
                     </div>
 
                     <section>
@@ -1997,7 +2167,7 @@ onMounted(async () => {
 
                     <section>
                         <h2 class="text-xl font-bold text-slate-900 mb-3">5. Hak Pengguna (Penghapusan Data)</h2>
-                        <p>Sesuai dengan regulasi pelindungan data pribadi (UU PDP Republik Indonesia), Anda memiliki hak penuh untuk meminta salinan data, mengubah data, atau meminta kami untuk menghapus seluruh data akun Anda dari server kami kapan saja dengan menghubungi kami di <strong>support@edutech.id</strong>.</p>
+                        <p>Sesuai dengan regulasi pelindungan data pribadi (UU PDP Republik Indonesia), Anda memiliki hak penuh untuk meminta salinan data, mengubah data, atau meminta kami untuk menghapus seluruh data akun Anda dari server kami kapan saja dengan menghubungi kami di <strong>support@segaradigital.id</strong>.</p>
                     </section>
                 </div>
             </div>
@@ -2033,12 +2203,14 @@ onMounted(async () => {
         <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-8 lg:gap-8 mb-12">
             <div class="md:col-span-2 lg:pr-8">
                 <div class="flex items-center mb-5">
-                    <div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white mr-2.5">
-                        <i class="ph-bold ph-code text-base"></i>
-                    </div>
-                    <span class="font-black text-xl text-slate-900">EduTech.</span>
+                    <img
+                      src="/images/logo-segara-digital.png"
+                      alt="Logo Segara Digital"
+                      class="w-8 h-8 object-contain mr-2.5"
+                    >
+                    <span class="font-black text-xl text-slate-900">Segara Digital.</span>
                 </div>
-                <p class="text-sm text-slate-500 leading-relaxed mb-6 font-medium">Mencetak talenta digital Indonesia berstandar industri melalui kurikulum ekosistem Vue & Laravel yang modern.</p>
+                <p class="text-sm text-slate-500 leading-relaxed mb-6 font-medium">Membangun talenta digital Indonesia lewat pembelajaran kolaboratif lintas topik, dari dasar hingga siap berkarya di dunia kerja.</p>
                 
                 <!-- Contact Info Added -->
                 <div class="mb-6 space-y-3">
@@ -2087,7 +2259,7 @@ onMounted(async () => {
             </div>
         </div>
         <div class="max-w-7xl mx-auto px-4 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center pt-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-            <p>&copy; 2026 EduTech LMS. Hak Cipta Dilindungi.</p>
+            <p>&copy; 2026 Segara Digital LMS. Hak Cipta Dilindungi.</p>
             <div class="mt-3 md:mt-0 flex space-x-4">
                 <span class="flex items-center"><i class="ph-bold ph-check mr-1 text-emerald-500"></i> Nuxt 4</span>
                 <span class="flex items-center"><i class="ph-bold ph-check mr-1 text-emerald-500"></i> Laravel 13</span>
@@ -2110,6 +2282,23 @@ onMounted(async () => {
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .animation-delay-2000 { animation-delay: 2s; }
+        .hero-grid-pattern {
+            background-image:
+                linear-gradient(rgba(148, 163, 184, 0.14) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(148, 163, 184, 0.14) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+        .hero-sunset-wash {
+            background:
+                radial-gradient(circle at 18% 12%, rgba(251, 191, 36, 0.18), transparent 42%),
+                radial-gradient(circle at 82% 24%, rgba(14, 165, 233, 0.18), transparent 46%),
+                linear-gradient(140deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.02));
+        }
+        .hero-panel-glow {
+            background:
+                radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.22), transparent 38%),
+                radial-gradient(circle at 80% 80%, rgba(125, 211, 252, 0.28), transparent 36%);
+        }
         .line-clamp-1 { display: -webkit-box; line-clamp: 1; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
         .line-clamp-2 { display: -webkit-box; line-clamp: 2; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .line-clamp-3 { display: -webkit-box; line-clamp: 3; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }

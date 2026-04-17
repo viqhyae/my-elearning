@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EduTech LMS - Dashboard Panel</title>
+    <title>Segara Digital LMS - Dashboard Panel</title>
     <!-- Vue 3 CDN -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Tailwind CSS CDN -->
@@ -69,10 +69,8 @@
     <aside :class="isSidebarOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed lg:static inset-y-0 left-0 z-50 w-[280px] bg-white border-r border-slate-200 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 shadow-2xl lg:shadow-none">
         
         <div class="h-20 flex items-center px-8 border-b border-slate-100 shrink-0">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary-600 to-blue-500 flex items-center justify-center text-white mr-3 shadow-md shadow-primary-500/30">
-                <i class="ph-bold ph-code text-xl"></i>
-            </div>
-            <span class="font-extrabold text-xl tracking-tight text-slate-900">EduTech.</span>
+            <img src="frontend/public/images/logo-segara-digital.png" alt="Logo Segara Digital" class="w-10 h-10 object-contain mr-3 drop-shadow-sm">
+            <span class="font-extrabold text-xl tracking-tight text-slate-900">Segara Digital.</span>
         </div>
 
         <div class="p-6 border-b border-slate-100 bg-slate-50/50">
@@ -123,7 +121,7 @@
                 </button>
                 <div class="hidden sm:block animate-fade-in">
                     <h2 class="text-xl font-black text-slate-900 leading-tight">{{ currentMenuLabel }}</h2>
-                    <p class="text-xs font-medium text-slate-500">EduTech Dashboard v2.0</p>
+                    <p class="text-xs font-medium text-slate-500">Segara Digital Dashboard v2.0</p>
                 </div>
             </div>
 
@@ -155,7 +153,7 @@
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2 animate-fade-in">
                             <div>
                                 <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Ringkasan Platform</h1>
-                                <p class="text-sm text-slate-500 mt-1">Pantau performa dan metrik utama EduTech LMS hari ini.</p>
+                                <p class="text-sm text-slate-500 mt-1">Pantau performa dan metrik utama Segara Digital LMS hari ini.</p>
                             </div>
                             <div class="flex gap-2 w-full sm:w-auto">
                                 <button @click="showToast('Laporan PDF sedang di-generate...', 'info')" class="flex-1 sm:flex-none px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 shadow-sm transition flex items-center justify-center"><i class="ph-bold ph-download-simple mr-2"></i> Report Data</button>
@@ -284,7 +282,7 @@
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 animate-fade-in">
                             <div>
                                 <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Data Pengguna</h1>
-                                <p class="text-sm text-slate-500 mt-1">Manajemen seluruh pengguna aktif di platform EduTech.</p>
+                                <p class="text-sm text-slate-500 mt-1">Manajemen seluruh pengguna aktif di platform Segara Digital.</p>
                             </div>
                             <button @click="openModal('add-user')" class="px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-bold hover:bg-primary-700 shadow-md transition flex items-center"><i class="ph-bold ph-plus mr-2"></i> Tambah User</button>
                         </div>
@@ -434,18 +432,18 @@
                     <template v-else-if="currentMenu === 'settings'">
                         <div class="mb-6 animate-fade-in">
                             <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Pengaturan Global</h1>
-                            <p class="text-sm text-slate-500 mt-1">Konfigurasi operasional platform EduTech.</p>
+                            <p class="text-sm text-slate-500 mt-1">Konfigurasi operasional platform Segara Digital.</p>
                         </div>
                         <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-6 sm:p-10 animate-slide-up max-w-3xl">
                             <form @submit.prevent="showToast('Pengaturan Global Berhasil Disimpan!')" class="space-y-6">
                                 <div>
                                     <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Nama Platform</label>
-                                    <input type="text" value="EduTech LMS" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
+                                    <input type="text" value="Segara Digital LMS" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
                                 </div>
                                 <div class="grid sm:grid-cols-2 gap-6">
                                     <div>
                                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Email Support</label>
-                                        <input type="email" value="support@edutech.id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
+                                        <input type="email" value="support@segaradigital.id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
                                     </div>
                                     <div>
                                         <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Mata Uang Default</label>
@@ -1045,7 +1043,7 @@
             
             <!-- Footer Dashboard -->
             <footer class="mt-8 pt-6 border-t border-slate-200 text-center flex flex-col md:flex-row justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest pb-4 max-w-[1400px] mx-auto w-full">
-                <p>&copy; 2026 EduTech LMS Backend.</p>
+                <p>&copy; 2026 Segara Digital LMS Backend.</p>
                 <div class="flex gap-5 mt-4 md:mt-0">
                     <a href="#" class="hover:text-primary-600 transition">Pusat Bantuan</a>
                     <a href="#" class="hover:text-primary-600 transition">Syarat Ketentuan</a>
@@ -1232,7 +1230,7 @@
             });
 
             const currentUser = computed(() => {
-                if(role.value === 'admin') return { name: 'Admin Pusat EduTech', roleText: 'Super Admin', avatar: 'https://i.pravatar.cc/150?img=11' }
+                if(role.value === 'admin') return { name: 'Admin Pusat Segara Digital', roleText: 'Super Admin', avatar: 'https://i.pravatar.cc/150?img=11' }
                 if(role.value === 'instructor') return { name: 'Budi Santoso', roleText: 'Instruktur Expert', avatar: 'https://i.pravatar.cc/150?img=8' }
                 return { name: 'Andi Kusuma', roleText: 'Siswa Premium', avatar: 'https://i.pravatar.cc/150?img=12' }
             });

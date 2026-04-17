@@ -69,6 +69,16 @@ export const useGeminiFrontendState = () => {
             const categoryAliasMap: Record<string, string> = {
                 'Backend & API': 'Backend & Database',
                 'DevOps & Server': 'DevOps & Cloud',
+                'Frontend Engineer': 'Web Development',
+                'Backend Engineer': 'Backend & Database',
+                'DevOps Engineer': 'DevOps & Cloud',
+                'Mobile Developer': 'Mobile App',
+                'UI/UX Designer': 'UI/UX Design',
+                'Data Scientist': 'Data Science',
+                'AI Engineer': 'Data Science',
+                'Cyber Security Engineer': 'Cyber Security',
+                'Project & Product Specialist': 'Productivity',
+                'People & Communication Specialist': 'Soft Skills',
             }
 
             const navigate = (page, data = null) => {
@@ -98,12 +108,16 @@ export const useGeminiFrontendState = () => {
                 nextTick(() => handleScroll());
             }
 
-            const categories = ref(['Web Development', 'Backend & Database', 'Mobile App', 'DevOps & Cloud', 'UI/UX Design', 'Data Science'])
+            const categories = ref(['Web Development', 'Backend & Database', 'Mobile App', 'DevOps & Cloud', 'UI/UX Design', 'Data Science', 'Cyber Security'])
             const categoriesPreview = ref([
-                { name: 'Web Development', icon: 'ph-duotone ph-browser', count: 24, color: 'text-blue-500', hoverColor: 'group-hover:text-blue-400', hoverAnim: 'group-hover:animate-bounce-gentle group-hover:drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]' },
-                { name: 'Backend & API', icon: 'ph-duotone ph-database', count: 18, color: 'text-emerald-500', hoverColor: 'group-hover:text-emerald-400', hoverAnim: 'group-hover:animate-pulse-fast group-hover:drop-shadow-[0_0_15px_rgba(16,185,129,0.6)]' },
-                { name: 'DevOps & Server', icon: 'ph-duotone ph-cloud-arrow-up', count: 12, color: 'text-purple-500', hoverColor: 'group-hover:text-purple-400', hoverAnim: 'group-hover:animate-fly-up group-hover:drop-shadow-[0_0_15px_rgba(168,85,247,0.6)]' },
-                { name: 'UI/UX Design', icon: 'ph-duotone ph-paint-brush-broad', count: 15, color: 'text-pink-500', hoverColor: 'group-hover:text-pink-400', hoverAnim: 'group-hover:animate-swing group-hover:drop-shadow-[0_0_15px_rgba(236,72,153,0.6)]' }
+                { name: 'Frontend Engineer', icon: 'ph-duotone ph-browser', count: 24, color: 'text-blue-500', hoverColor: 'group-hover:text-blue-400', hoverAnim: 'group-hover:animate-bounce-gentle group-hover:drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]' },
+                { name: 'Backend Engineer', icon: 'ph-duotone ph-database', count: 20, color: 'text-emerald-500', hoverColor: 'group-hover:text-emerald-400', hoverAnim: 'group-hover:animate-pulse-fast group-hover:drop-shadow-[0_0_15px_rgba(16,185,129,0.6)]' },
+                { name: 'DevOps Engineer', icon: 'ph-duotone ph-cloud-arrow-up', count: 14, color: 'text-violet-500', hoverColor: 'group-hover:text-violet-400', hoverAnim: 'group-hover:animate-fly-up group-hover:drop-shadow-[0_0_15px_rgba(139,92,246,0.6)]' },
+                { name: 'Mobile Developer', icon: 'ph-duotone ph-device-mobile', count: 12, color: 'text-orange-500', hoverColor: 'group-hover:text-orange-400', hoverAnim: 'group-hover:animate-bounce-gentle group-hover:drop-shadow-[0_0_15px_rgba(249,115,22,0.6)]' },
+                { name: 'UI/UX Designer', icon: 'ph-duotone ph-paint-brush-broad', count: 15, color: 'text-pink-500', hoverColor: 'group-hover:text-pink-400', hoverAnim: 'group-hover:animate-swing group-hover:drop-shadow-[0_0_15px_rgba(236,72,153,0.6)]' },
+                { name: 'Data Scientist', icon: 'ph-duotone ph-chart-line-up', count: 11, color: 'text-sky-500', hoverColor: 'group-hover:text-sky-400', hoverAnim: 'group-hover:animate-pulse-fast group-hover:drop-shadow-[0_0_15px_rgba(14,165,233,0.6)]' },
+                { name: 'AI Engineer', icon: 'ph-duotone ph-robot', count: 9, color: 'text-indigo-500', hoverColor: 'group-hover:text-indigo-400', hoverAnim: 'group-hover:animate-fly-up group-hover:drop-shadow-[0_0_15px_rgba(99,102,241,0.6)]' },
+                { name: 'Cyber Security Engineer', icon: 'ph-duotone ph-shield-check', count: 8, color: 'text-amber-500', hoverColor: 'group-hover:text-amber-400', hoverAnim: 'group-hover:animate-swing group-hover:drop-shadow-[0_0_15px_rgba(245,158,11,0.6)]' }
             ])
             
             const brands = ref([
@@ -142,7 +156,7 @@ export const useGeminiFrontendState = () => {
 
             const impactStats = ref([
                 { prefix: '', values: ['0', '15', '30', '45', '60', '75', '85', '92', '96'], suffix: '%', suffixClass: 'ml-0.5', duration: '3.5s', title: 'Tingkat Penyerapan Kerja', desc: 'Alumni mendapatkan pekerjaan <br>dalam waktu 3 bulan setelah lulus.' },
-                { prefix: 'Rp', values: ['0.0', '1.5', '3.0', '4.5', '6.0', '7.0', '7.8', '8.2', '8.5'], suffix: 'JT+', suffixClass: 'text-2xl ml-0.5 mb-0.5', duration: '4.0s', title: 'Rata-rata Gaji Pertama', desc: 'Kompensasi entry-level untuk posisi<br>Software Engineer alumni EduTech.' },
+                { prefix: 'Rp', values: ['0.0', '1.5', '3.0', '4.5', '6.0', '7.0', '7.8', '8.2', '8.5'], suffix: 'JT+', suffixClass: 'text-2xl ml-0.5 mb-0.5', duration: '4.0s', title: 'Rata-rata Gaji Pertama', desc: 'Kompensasi entry-level untuk posisi<br>Software Engineer alumni Segara Digital.' },
                 { prefix: '', values: ['0', '300', '700', '1.200', '1.800', '2.300', '2.600', '2.800', '3.000'], suffix: '+', suffixClass: 'ml-0.5', duration: '4.5s', title: 'Sertifikat Diterbitkan', desc: 'Telah diakui kredibilitasnya oleh<br>berbagai perusahaan teknologi.' }
             ])
 
@@ -189,7 +203,11 @@ export const useGeminiFrontendState = () => {
                 { id: 13, title: 'Flutter State Management: Bloc & Riverpod', category: 'Mobile App', level: 'Lanjutan', instructor: 'Dian Sastro', instructorInitials: 'DS', price: 'Rp 500.000', rating: '4.7', students: '600', image: 'https://images.unsplash.com/photo-1526498460520-4c246339dccb?w=800&q=80' },
                 { id: 14, title: 'Machine Learning with Python & Scikit-Learn', category: 'Data Science', level: 'Menengah', instructor: 'Andi Kusuma', instructorInitials: 'AK', price: 'Rp 550.000', rating: '4.9', students: '950', image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80' },
                 { id: 15, title: 'Modern JavaScript Masterclass (ES6+)', category: 'Web Development', level: 'Pemula', instructor: 'Ahmad Fauzi', instructorInitials: 'AF', price: 'Rp 299.000', rating: '4.8', students: '3.5k', image: 'https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&q=80' },
-                { id: 16, title: 'Dasar Logika PHP & OOP untuk Pemula', category: 'Backend & Database', level: 'Pemula', instructor: 'Reza Rahadian', instructorInitials: 'RR', price: 'Rp 250.000', rating: '4.7', students: '2.8k', image: 'https://images.unsplash.com/photo-1555099962-4199c345e5dd?w=800&q=80' }
+                { id: 16, title: 'Dasar Logika PHP & OOP untuk Pemula', category: 'Backend & Database', level: 'Pemula', instructor: 'Reza Rahadian', instructorInitials: 'RR', price: 'Rp 250.000', rating: '4.7', students: '2.8k', image: 'https://images.unsplash.com/photo-1555099962-4199c345e5dd?w=800&q=80' },
+                { id: 17, title: 'Cyber Security Fundamental untuk Web Engineer', category: 'Cyber Security', level: 'Menengah', instructor: 'Dimas Prakoso', instructorInitials: 'DP', price: 'Rp 520.000', rating: '4.9', students: '700', image: 'https://images.unsplash.com/photo-1510511459019-5dda7724fd87?w=800&q=80' },
+                { id: 18, title: 'Prompt Engineering untuk AI Product Builder', category: 'Data Science', level: 'Menengah', instructor: 'Nadia Putri', instructorInitials: 'NP', price: 'Rp 480.000', rating: '4.8', students: '980', image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&q=80' },
+                { id: 19, title: 'System Design Interview Prep 2026', category: 'Backend & Database', level: 'Lanjutan', instructor: 'Farhan Yusuf', instructorInitials: 'FY', price: 'Rp 699.000', rating: '4.9', students: '460', image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80' },
+                { id: 20, title: 'QA Automation with Playwright & CI', category: 'DevOps & Cloud', level: 'Menengah', instructor: 'Wulan Pratiwi', instructorInitials: 'WP', price: 'Rp 420.000', rating: '4.8', students: '820', image: 'https://images.unsplash.com/photo-1593642532973-d31b6557fa68?w=800&q=80' }
             ])
 
             const loadFrontendPayload = async () => {
@@ -213,6 +231,7 @@ export const useGeminiFrontendState = () => {
                         allCourses?: Array<{
                             id: number
                             title: string
+                            slug?: string
                             category: string
                             level: string
                             instructor: string
@@ -231,15 +250,15 @@ export const useGeminiFrontendState = () => {
                     }
 
                     if (Array.isArray(payload.categoriesPreview) && payload.categoriesPreview.length > 0) {
-                        const previewMap = new Map(
-                            categoriesPreview.value.map((item) => [String(item.name), item])
-                        )
+                        const localPreview = [...categoriesPreview.value]
+                        const remotePreview = payload.categoriesPreview
+                        const remoteNames = new Set(remotePreview.map((item) => item.name.toLowerCase()))
+                        const mergedPreview = [
+                            ...remotePreview,
+                            ...localPreview.filter((item) => !remoteNames.has(item.name.toLowerCase())),
+                        ]
 
-                        payload.categoriesPreview.forEach((item) => {
-                            previewMap.set(String(item.name), item)
-                        })
-
-                        categoriesPreview.value = Array.from(previewMap.values())
+                        categoriesPreview.value = mergedPreview.slice(0, 8)
                     }
 
                     if (Array.isArray(payload.stats) && payload.stats.length > 0) {
@@ -278,9 +297,9 @@ export const useGeminiFrontendState = () => {
             const testimonials = ref([
                 { name: 'Rina Melati', role: 'Frontend Engineer di Tokopedia', avatar: 'https://i.pravatar.cc/150?img=47', quote: 'Materi Nuxt 4 di sini paling update. Saya yang sebelumnya bingung dengan konsep SSR jadi sangat paham dan langsung implementasi di kantor.', colorClass: 'bg-blue-50/50 hover:bg-blue-50/80 border-blue-100' },
                 { name: 'Andi Kusuma', role: 'Backend Engineer', avatar: 'https://i.pravatar.cc/150?img=15', quote: 'Pembahasan Laravel 13 dan API Security sangat mendalam. Tidak hanya teori, tapi *best practice* yang dipakai industri.', colorClass: 'bg-white hover:bg-slate-50 border-slate-100' },
-                { name: 'Fajar Nugraha', role: 'DevOps Specialist', avatar: 'https://i.pravatar.cc/150?img=11', quote: 'EduTech berhasil mengubah cara saya setup Docker & Nginx. Dulu sering error, sekarang deploy aplikasi semulus jalan tol.', colorClass: 'bg-purple-50/50 hover:bg-purple-50/80 border-purple-100' },
+                { name: 'Fajar Nugraha', role: 'DevOps Specialist', avatar: 'https://i.pravatar.cc/150?img=11', quote: 'Segara Digital berhasil mengubah cara saya setup Docker & Nginx. Dulu sering error, sekarang deploy aplikasi semulus jalan tol.', colorClass: 'bg-purple-50/50 hover:bg-purple-50/80 border-purple-100' },
                 { name: 'Sarah Wijaya', role: 'Mahasiswa IT', avatar: 'https://i.pravatar.cc/150?img=5', quote: 'Sangat cocok untuk pemula. Instrukturnya menjelaskan dengan bahasa manusia, bukan bahasa alien. Sangat terbantu!', colorClass: 'bg-white hover:bg-slate-50 border-slate-100' },
-                { name: 'Reza Aditya', role: 'Freelance Developer', avatar: 'https://i.pravatar.cc/150?img=12', quote: 'Berkat portofolio hasil kelas dari EduTech, saya dipercaya klien luar negeri dengan *rate* dollar yang memuaskan.', colorClass: 'bg-emerald-50/50 hover:bg-emerald-50/80 border-emerald-100' },
+                { name: 'Reza Aditya', role: 'Freelance Developer', avatar: 'https://i.pravatar.cc/150?img=12', quote: 'Berkat portofolio hasil kelas dari Segara Digital, saya dipercaya klien luar negeri dengan *rate* dollar yang memuaskan.', colorClass: 'bg-emerald-50/50 hover:bg-emerald-50/80 border-emerald-100' },
                 { name: 'Diana Fitri', role: 'UI/UX Designer', avatar: 'https://i.pravatar.cc/150?img=1', quote: 'Platform ini luar biasa. Saya belajar pembuatan design system dan langsung bisa diterapkan secara konsisten di proyek UI kantor saya.', colorClass: 'bg-pink-50/50 hover:bg-pink-50/80 border-pink-100' },
                 { name: 'Kevin Pratama', role: 'Data Analyst', avatar: 'https://i.pravatar.cc/150?img=13', quote: 'Roadmap data science-nya sangat terstruktur. Tidak membingungkan untuk pemula yang baru belajar Python dan analisa data mentah.', colorClass: 'bg-yellow-50/50 hover:bg-yellow-50/80 border-yellow-100' },
                 { name: 'Citra Kirana', role: 'Mobile Developer', avatar: 'https://i.pravatar.cc/150?img=9', quote: 'Materi Flutter State Management-nya yang terbaik sejauh ini. Riverpod dijelaskan sampai ke akar-akarnya, gak cuma disuruh ketik doang.', colorClass: 'bg-indigo-50/50 hover:bg-indigo-50/80 border-indigo-100' },
@@ -359,7 +378,7 @@ export const useGeminiFrontendState = () => {
                     name: 'Arief Rahman',
                     transition: 'Non-IT &rarr; Frontend Developer',
                     company: 'Tokopedia',
-                    quote: 'Saya lulusan akuntansi yang banting setir ke IT. Berkat roadmap Frontend dari EduTech, saya bisa membangun portofolio yang memikat HRD dalam waktu 4 bulan saja.',
+                    quote: 'Saya lulusan akuntansi yang banting setir ke IT. Berkat roadmap Frontend dari Segara Digital, saya bisa membangun portofolio yang memikat HRD dalam waktu 4 bulan saja.',
                     image: 'https://i.pravatar.cc/150?img=60'
                 },
                 {
@@ -373,14 +392,14 @@ export const useGeminiFrontendState = () => {
                     name: 'Bima Mahendra',
                     transition: 'Gojek Driver &rarr; Backend Dev',
                     company: 'Gojek',
-                    quote: 'Sempat pesimis karena tidak punya latar belakang IT sama sekali. Tapi instruktur EduTech sabar banget bimbing dari nol sampai saya tembus kerja di Gojek.',
+                    quote: 'Sempat pesimis karena tidak punya latar belakang IT sama sekali. Tapi instruktur Segara Digital sabar banget bimbing dari nol sampai saya tembus kerja di Gojek.',
                     image: 'https://i.pravatar.cc/150?img=12'
                 },
                 {
                     name: 'Lestari Putri',
                     transition: 'Guru Honorer &rarr; Data Analyst',
                     company: 'Bank Mandiri',
-                    quote: 'Modul Python dan Data Science di EduTech sangat aplikatif. Sekarang saya membantu menganalisa ribuan data transaksi per hari.',
+                    quote: 'Modul Python dan Data Science di Segara Digital sangat aplikatif. Sekarang saya membantu menganalisa ribuan data transaksi per hari.',
                     image: 'https://i.pravatar.cc/150?img=35'
                 }
             ]);
