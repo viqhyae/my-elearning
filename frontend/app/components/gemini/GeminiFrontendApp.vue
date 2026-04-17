@@ -75,8 +75,12 @@ const registerName = ref('')
 const registerEmail = ref('')
 const registerPhone = ref('')
 const registerRole = ref('student')
+const registerPassword = ref('')
+const registerPasswordConfirmation = ref('')
 const registerAgree = ref(false)
+const registerLoading = ref(false)
 const registerNotice = ref('')
+const registerNoticeTone = ref<'info' | 'error' | 'success'>('info')
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   const maybeError = error as {
@@ -121,6 +125,7 @@ const navigate = async (page: string, data: unknown = null) => {
 
   if (page !== 'register') {
     registerNotice.value = ''
+    registerNoticeTone.value = 'info'
   }
 
   if (page === 'login') {
@@ -178,16 +183,55 @@ const submitLogin = async () => {
   }
 }
 
-const submitRegister = () => {
+const submitRegister = async () => {
   registerNotice.value = ''
+  registerNoticeTone.value = 'info'
 
-  if (!registerName.value.trim() || !registerEmail.value.trim() || !registerAgree.value) {
-    registerNotice.value = 'Lengkapi data wajib dan centang persetujuan terlebih dahulu.'
+  if (!registerName.value.trim() || !registerEmail.value.trim() || !registerPassword.value.trim()) {
+    registerNotice.value = 'Lengkapi data wajib terlebih dahulu.'
+    registerNoticeTone.value = 'error'
     return
   }
 
-  loginEmail.value = registerEmail.value.trim()
-  registerNotice.value = 'Pendaftaran mandiri belum diaktifkan di backend. Silakan login dengan akun demo atau hubungi admin.'
+  if (!registerAgree.value) {
+    registerNotice.value = 'Anda harus menyetujui syarat penggunaan terlebih dahulu.'
+    registerNoticeTone.value = 'error'
+    return
+  }
+
+  if (registerPassword.value.length < 8) {
+    registerNotice.value = 'Password minimal 8 karakter.'
+    registerNoticeTone.value = 'error'
+    return
+  }
+
+  if (registerPassword.value !== registerPasswordConfirmation.value) {
+    registerNotice.value = 'Konfirmasi password tidak sesuai.'
+    registerNoticeTone.value = 'error'
+    return
+  }
+
+  registerLoading.value = true
+
+  try {
+    const user = await auth.register({
+      name: registerName.value.trim(),
+      email: registerEmail.value.trim(),
+      password: registerPassword.value,
+      password_confirmation: registerPasswordConfirmation.value,
+      role: registerRole.value === 'mentor' ? 'mentor' : 'student',
+    })
+
+    registerNoticeTone.value = 'success'
+    registerNotice.value = 'Registrasi berhasil. Mengalihkan ke dashboard...'
+    syncAuthState()
+    await router.push(auth.defaultPathByRole(user.role))
+  } catch (error) {
+    registerNoticeTone.value = 'error'
+    registerNotice.value = getErrorMessage(error, 'Registrasi gagal. Coba lagi beberapa saat.')
+  } finally {
+    registerLoading.value = false
+  }
 }
 
 const logout = async () => {
@@ -1740,7 +1784,7 @@ onMounted(async () => {
                         <i class="ph-duotone ph-user-plus"></i>
                     </div>
                     <h1 class="text-3xl font-black text-slate-900 mb-2">Daftar Akun EduTech</h1>
-                    <p class="text-slate-500 text-sm md:text-base">Siapkan data Anda. Integrasi endpoint register bisa langsung diaktifkan saat backend siap.</p>
+                    <p class="text-slate-500 text-sm md:text-base">Buat akun baru dan langsung masuk ke dashboard belajar Anda.</p>
                 </div>
 
                 <form @submit.prevent="submitRegister" class="grid md:grid-cols-2 gap-4">
@@ -1768,17 +1812,27 @@ onMounted(async () => {
                         </select>
                     </div>
 
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Password</label>
+                        <input v-model="registerPassword" type="password" autocomplete="new-password" required minlength="8" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all text-sm font-medium text-slate-800" placeholder="Minimal 8 karakter">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Konfirmasi Password</label>
+                        <input v-model="registerPasswordConfirmation" type="password" autocomplete="new-password" required minlength="8" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all text-sm font-medium text-slate-800" placeholder="Ulangi password">
+                    </div>
+
                     <label class="md:col-span-2 flex items-start text-sm text-slate-600 cursor-pointer">
                         <input v-model="registerAgree" type="checkbox" class="mt-0.5 mr-3 rounded border-slate-300 text-primary-600 focus:ring-primary-500">
                         Saya menyetujui syarat penggunaan dan kebijakan privasi EduTech.
                     </label>
 
-                    <p v-if="registerNotice" class="md:col-span-2 text-sm font-semibold text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+                    <p v-if="registerNotice" class="md:col-span-2 text-sm font-semibold rounded-xl px-4 py-3 border" :class="registerNoticeTone === 'error' ? 'text-red-700 bg-red-50 border-red-100' : registerNoticeTone === 'success' ? 'text-emerald-700 bg-emerald-50 border-emerald-100' : 'text-amber-700 bg-amber-50 border-amber-100'">
                         {{ registerNotice }}
                     </p>
 
                     <div class="md:col-span-2 grid sm:grid-cols-2 gap-3 mt-2">
-                        <button type="submit" class="py-3.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-primary-600 transition shadow-lg">Simpan Data Pendaftaran</button>
+                        <button :disabled="registerLoading" type="submit" class="py-3.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-primary-600 disabled:bg-slate-400 disabled:cursor-not-allowed transition shadow-lg">{{ registerLoading ? 'Memproses...' : 'Simpan Data Pendaftaran' }}</button>
                         <button type="button" @click="navigate('login')" class="py-3.5 border border-slate-200 rounded-xl font-bold text-sm text-slate-700 hover:bg-slate-50 transition">Kembali ke Login</button>
                     </div>
                 </form>

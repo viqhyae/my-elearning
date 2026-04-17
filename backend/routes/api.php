@@ -26,6 +26,7 @@ Route::get('/health', function (): JsonResponse {
 Route::get('/courses', [CourseController::class, 'index']);
 Route::get('/courses/{slug}', [CourseController::class, 'show']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);
 Route::get('/gemini/frontend', [GeminiContentController::class, 'frontend']);
 Route::get('/gemini/dashboard', [GeminiContentController::class, 'dashboard']);
 

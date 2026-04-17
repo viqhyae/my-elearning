@@ -2,6 +2,7 @@
 definePageMeta({
   layout: false,
   ssr: false,
+  middleware: 'auth',
 })
 
 useGeminiAssets()

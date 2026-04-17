@@ -12,6 +12,14 @@ type LoginResponse = {
   user: AuthUser
 }
 
+type RegisterPayload = {
+  name: string
+  email: string
+  password: string
+  password_confirmation: string
+  role?: 'student' | 'mentor' | 'career'
+}
+
 const TOKEN_KEY = 'elearning_token'
 const USER_KEY = 'elearning_user'
 
@@ -107,6 +115,24 @@ export const useAuth = () => {
     return response.user
   }
 
+  const register = async (payload: RegisterPayload) => {
+    const response = await $fetch<LoginResponse>('/api/register', {
+      method: 'POST',
+      baseURL: apiBase,
+      headers: {
+        Accept: 'application/json',
+      },
+      body: payload,
+    })
+
+    token.value = response.token
+    user.value = response.user
+    sessionValidated.value = true
+    persistSession()
+
+    return response.user
+  }
+
   const fetchMe = async () => {
     if (!token.value) {
       return null
@@ -182,6 +208,7 @@ export const useAuth = () => {
     ensureSession,
     authHeaders,
     login,
+    register,
     fetchMe,
     logout,
     clearSession,

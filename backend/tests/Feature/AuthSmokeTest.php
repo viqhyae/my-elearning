@@ -78,6 +78,66 @@ class AuthSmokeTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_new_user_can_register_then_access_me_endpoint(): void
+    {
+        $email = 'new.user@elearning.local';
+
+        $registerResponse = $this->postJson('/api/register', [
+            'name' => 'New User',
+            'email' => $email,
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'role' => 'student',
+        ]);
+
+        $registerResponse
+            ->assertCreated()
+            ->assertJsonPath('message', 'Registrasi berhasil.')
+            ->assertJsonPath('user.email', $email)
+            ->assertJsonPath('user.role', 'student')
+            ->assertJsonPath('user.status', 'active')
+            ->assertJsonStructure([
+                'token',
+                'user' => ['id', 'name', 'email', 'role', 'status', 'avatar_url'],
+            ]);
+
+        $token = $registerResponse->json('token');
+
+        $this->assertNotEmpty($token);
+
+        $this->withToken($token)
+            ->getJson('/api/me')
+            ->assertOk()
+            ->assertJsonPath('email', $email)
+            ->assertJsonPath('role', 'student');
+    }
+
+    public function test_career_role_on_register_is_mapped_to_student_role(): void
+    {
+        $this->postJson('/api/register', [
+            'name' => 'Career Switcher',
+            'email' => 'career.switcher@elearning.local',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'role' => 'career',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('user.role', 'student');
+    }
+
+    public function test_register_rejects_duplicate_email(): void
+    {
+        $this->postJson('/api/register', [
+            'name' => 'Duplicate Email',
+            'email' => 'student@elearning.local',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'role' => 'student',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('email');
+    }
+
     public function test_inactive_user_cannot_login(): void
     {
         User::query()

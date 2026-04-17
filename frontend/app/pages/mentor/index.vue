@@ -2,6 +2,8 @@
 definePageMeta({
   layout: false,
   ssr: false,
+  middleware: ['auth', 'role'],
+  role: 'mentor',
 })
 
 useGeminiAssets()
