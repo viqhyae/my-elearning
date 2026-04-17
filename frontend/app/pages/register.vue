@@ -8,5 +8,5 @@ useGeminiAssets()
 </script>
 
 <template>
-  <GeminiDashboardApp initial-role="admin" initial-menu="settings" />
+  <GeminiFrontendApp initial-page="register" />
 </template>

@@ -1,0 +1,1236 @@
+<script setup lang="ts">
+const props = withDefaults(
+  defineProps<{
+    initialRole?: 'admin' | 'instructor' | 'mentor' | 'student'
+    initialMenu?: string
+  }>(),
+  {
+    initialRole: 'admin',
+    initialMenu: 'dashboard',
+  }
+)
+
+const {
+  role,
+  currentMenu,
+  isSidebarOpen,
+  activeMenus,
+  currentMenuLabel,
+  currentUser,
+  adminStats,
+  recentRegistrations,
+  instructorCourses,
+  isModalOpen,
+  modalType,
+  toast,
+  openModal,
+  closeModal,
+  showToast,
+  submitModal,
+} = useGeminiDashboardState()
+
+const mapRole = (value: string) => {
+  if (value === 'mentor') {
+    return 'instructor'
+  }
+
+  if (value === 'student' || value === 'admin' || value === 'instructor') {
+    return value
+  }
+
+  return 'admin'
+}
+
+const menuAliasByRole: Record<string, Record<string, string>> = {
+  admin: {
+    catalog: 'content',
+    certificates: 'users',
+    earnings: 'transactions',
+    profile: 'settings',
+  },
+  instructor: {
+    transactions: 'earnings',
+    settings: 'profile',
+    catalog: 'courses',
+  },
+  student: {
+    courses: 'catalog',
+    discussions: 'dashboard',
+    earnings: 'transactions',
+    profile: 'settings',
+    users: 'dashboard',
+    content: 'dashboard',
+  },
+}
+
+const normalizeMenuForRole = (roleName: string, requestedMenu: string) => {
+  const normalizedMenu = menuAliasByRole[roleName]?.[requestedMenu] || requestedMenu
+  const availableMenuIds = activeMenus.value.map((menu) => menu.id)
+
+  if (availableMenuIds.includes(normalizedMenu)) {
+    return normalizedMenu
+  }
+
+  return 'dashboard'
+}
+
+onMounted(() => {
+  const normalizedRole = mapRole(props.initialRole || 'admin')
+  role.value = normalizedRole
+  currentMenu.value = normalizeMenuForRole(normalizedRole, props.initialMenu || 'dashboard')
+})
+
+watch(
+  () => activeMenus.value,
+  (menus) => {
+    if (!menus.some((menu) => menu.id === currentMenu.value)) {
+      currentMenu.value = 'dashboard'
+    }
+  },
+  { deep: true, immediate: true }
+)
+</script>
+
+<template>
+<div v-cloak class="flex h-screen w-full bg-slate-50 relative font-sans antialiased selection:bg-primary-200 selection:text-primary-900 text-slate-800">
+
+    <!-- ==============================
+         SIDEBAR (Desktop & Mobile)
+    =============================== -->
+    <div v-if="isSidebarOpen" @click="isSidebarOpen = false" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden transition-opacity"></div>
+
+    <aside :class="isSidebarOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed lg:static inset-y-0 left-0 z-50 w-[280px] bg-white border-r border-slate-200 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 shadow-2xl lg:shadow-none">
+        
+        <div class="h-20 flex items-center px-8 border-b border-slate-100 shrink-0">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary-600 to-blue-500 flex items-center justify-center text-white mr-3 shadow-md shadow-primary-500/30">
+                <i class="ph-bold ph-code text-xl"></i>
+            </div>
+            <span class="font-extrabold text-xl tracking-tight text-slate-900">EduTech.</span>
+        </div>
+
+        <div class="p-6 border-b border-slate-100 bg-slate-50/50">
+            <div class="flex items-center gap-4">
+                <div class="relative">
+                    <img :src="currentUser.avatar" class="w-12 h-12 rounded-xl object-cover border border-slate-200 shadow-sm bg-white" alt="User Avatar">
+                    <div class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full"></div>
+                </div>
+                <div class="flex flex-col overflow-hidden">
+                    <span class="font-bold text-slate-900 text-sm truncate">{{ currentUser.name }}</span>
+                    <span class="text-[10px] font-bold text-primary-700 bg-primary-50 w-max px-2 py-0.5 rounded border border-primary-100 mt-1 uppercase tracking-wider">{{ currentUser.roleText }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto py-6 px-4 space-y-1.5 no-scrollbar">
+            <p class="px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 mt-2">Menu Utama</p>
+            
+            <button v-for="menu in activeMenus" :key="menu.id" @click="currentMenu = menu.id; isSidebarOpen = false" 
+                    class="w-full flex items-center px-4 py-3 rounded-2xl transition-all duration-200 group relative text-left"
+                    :class="currentMenu === menu.id ? 'bg-primary-600 text-white shadow-md shadow-primary-500/20' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 font-medium'">
+                
+                <i :class="[menu.icon, currentMenu === menu.id ? 'text-white' : 'text-slate-400 group-hover:text-primary-500']" class="text-xl mr-3 transition-colors"></i>
+                <span class="text-sm font-semibold flex-1">{{ menu.label }}</span>
+                
+                <span v-if="menu.badge" :class="currentMenu === menu.id ? 'bg-white/20 text-white' : 'bg-red-100 text-red-600'" class="ml-auto py-0.5 px-2 rounded-full text-[10px] font-bold">
+                    {{ menu.badge }}
+                </span>
+            </button>
+        </div>
+
+        <div class="p-6 border-t border-slate-100 shrink-0">
+            <button @click="showToast('Anda berhasil keluar dari sistem.', 'info')" class="w-full flex items-center justify-center px-4 py-3 bg-white border border-slate-200 text-slate-600 hover:text-red-600 hover:bg-red-50 hover:border-red-100 rounded-2xl font-bold text-sm transition-all group shadow-sm">
+                <i class="ph-bold ph-sign-out text-lg mr-2 group-hover:text-red-500"></i> Keluar Dasbor
+            </button>
+        </div>
+    </aside>
+
+    <!-- ==============================
+         MAIN CONTENT AREA
+    =============================== -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        
+        <header class="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 lg:px-10 shrink-0 z-30 sticky top-0">
+            <div class="flex items-center">
+                <button @click="isSidebarOpen = true" class="lg:hidden mr-4 text-slate-500 hover:text-primary-600 transition-colors bg-white p-2 rounded-xl shadow-sm border border-slate-100">
+                    <i class="ph-bold ph-list text-xl"></i>
+                </button>
+                <div class="hidden sm:block animate-fade-in">
+                    <h2 class="text-xl font-black text-slate-900 leading-tight">{{ currentMenuLabel }}</h2>
+                    <p class="text-xs font-medium text-slate-500">EduTech Dashboard v2.0</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3 md:space-x-5">
+                <div class="flex items-center bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+                    <span class="hidden md:inline-block text-[10px] font-bold text-slate-400 uppercase tracking-widest mx-3">Uji Coba Role:</span>
+                    <button @click="role = 'admin'; currentMenu = 'dashboard'" :class="role === 'admin' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'" class="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold transition-all">Admin</button>
+                    <button @click="role = 'instructor'; currentMenu = 'dashboard'" :class="role === 'instructor' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'" class="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold transition-all">Instruktur</button>
+                    <button @click="role = 'student'; currentMenu = 'dashboard'" :class="role === 'student' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'" class="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-bold transition-all">Siswa</button>
+                </div>
+
+                <div class="w-px h-8 bg-slate-200 hidden md:block"></div>
+
+                <button class="relative w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-500 hover:text-primary-600 hover:border-primary-200 hover:bg-primary-50 transition-all shadow-sm shrink-0">
+                    <i class="ph-duotone ph-bell text-xl"></i>
+                    <span class="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                </button>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10 scroll-smooth relative">
+            <div class="max-w-[1400px] mx-auto space-y-6 sm:space-y-8 pb-10">
+                
+                <!-- ==============================================
+                     1. VIEW: ADMIN
+                =============================================== -->
+                <template v-if="role === 'admin'">
+                    <template v-if="currentMenu === 'dashboard'">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2 animate-fade-in">
+                            <div>
+                                <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Ringkasan Platform</h1>
+                                <p class="text-sm text-slate-500 mt-1">Pantau performa dan metrik utama EduTech LMS hari ini.</p>
+                            </div>
+                            <div class="flex gap-2 w-full sm:w-auto">
+                                <button @click="showToast('Laporan PDF sedang di-generate...', 'info')" class="flex-1 sm:flex-none px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 shadow-sm transition flex items-center justify-center"><i class="ph-bold ph-download-simple mr-2"></i> Report Data</button>
+                                <button @click="showToast('Fitur pembuatan Campaign akan segera hadir.', 'info')" class="flex-1 sm:flex-none px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-primary-600 shadow-md transition flex items-center justify-center"><i class="ph-bold ph-plus mr-2"></i> Campaign Baru</button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 animate-slide-up">
+                            <div v-for="(stat, idx) in adminStats" :key="idx" class="bg-white p-6 md:p-8 rounded-[1.5rem] border border-slate-200 shadow-sm hover:-translate-y-1 transition-transform group cursor-pointer">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl" :class="stat.colorClass">
+                                        <i :class="stat.icon"></i>
+                                    </div>
+                                    <span class="flex items-center text-xs font-bold px-2.5 py-1 rounded-lg border" :class="stat.trend > 0 ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-red-700 bg-red-50 border-red-200'">
+                                        <i :class="stat.trend > 0 ? 'ph-bold ph-trend-up' : 'ph-bold ph-trend-down'" class="mr-1"></i> {{ Math.abs(stat.trend) }}%
+                                    </span>
+                                </div>
+                                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{{ stat.label }}</p>
+                                <h3 class="text-2xl md:text-3xl font-black text-slate-900">{{ stat.value }}</h3>
+                            </div>
+                        </div>
+
+                        <div class="grid lg:grid-cols-3 gap-6 animate-slide-up" style="animation-delay: 0.1s;">
+                            <!-- Grafik Pendapatan -->
+                            <div class="lg:col-span-2 bg-white p-6 sm:p-8 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col">
+                                <div class="flex justify-between items-center mb-8 border-b border-slate-100 pb-4">
+                                    <div>
+                                        <h3 class="text-lg font-bold text-slate-900">Grafik Penjualan Kelas</h3>
+                                        <p class="text-xs text-slate-500">Berdasarkan konversi payment gateway bulan ini</p>
+                                    </div>
+                                    <select class="text-xs font-bold text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none cursor-pointer hover:bg-slate-100">
+                                        <option>Bulan Ini</option>
+                                        <option>Bulan Lalu</option>
+                                        <option>Tahun 2026</option>
+                                    </select>
+                                </div>
+                                <div class="flex-1 min-h-[250px] flex items-end justify-between gap-2 pt-10 pb-2 relative">
+                                    <div class="absolute w-full top-0 border-t border-dashed border-slate-200"></div>
+                                    <div class="absolute w-full top-1/2 border-t border-dashed border-slate-200"></div>
+                                    <div class="absolute w-full bottom-2 border-t border-solid border-slate-200"></div>
+                                    
+                                    <div v-for="i in 12" :key="i" class="w-full relative flex justify-center group cursor-pointer z-10 h-full items-end">
+                                        <div class="w-full max-w-[3rem] bg-primary-50 rounded-t-lg transition-all duration-500 relative flex items-end justify-center group-hover:bg-primary-100" :style="{ height: `${Math.floor(Math.random() * 80) + 20}%` }">
+                                            <div class="w-full bg-gradient-to-t from-primary-600 to-primary-400 rounded-t-lg transition-all duration-300 group-hover:opacity-80 shadow-sm" :style="{ height: `${Math.floor(Math.random() * 70) + 30}%` }"></div>
+                                            <div class="absolute -top-10 bg-slate-900 text-white text-[10px] font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg">Rp {{ Math.floor(Math.random() * 50) + 10 }} Jt</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between text-[10px] font-bold text-slate-400 mt-2 px-2 uppercase tracking-wider">
+                                    <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>Mei</span><span>Jun</span>
+                                </div>
+                            </div>
+
+                            <!-- Pendaftaran Terbaru -->
+                            <div class="bg-white p-6 sm:p-8 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col">
+                                <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+                                    <h3 class="text-lg font-bold text-slate-900">Aktivitas Siswa</h3>
+                                    <button class="w-8 h-8 rounded-full bg-slate-50 text-slate-500 hover:text-primary-600 hover:bg-primary-50 flex items-center justify-center transition"><i class="ph-bold ph-dots-three"></i></button>
+                                </div>
+                                <div class="space-y-4 flex-1 overflow-y-auto pr-2 no-scrollbar">
+                                    <div v-for="(user, idx) in recentRegistrations" :key="idx" class="flex items-center group cursor-pointer p-3 bg-slate-50 border border-slate-100 hover:bg-white hover:border-primary-200 hover:shadow-md rounded-2xl transition-all">
+                                        <img :src="user.avatar" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border border-white mr-3 sm:mr-4 shrink-0 shadow-sm">
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-bold text-slate-900 truncate group-hover:text-primary-600 transition-colors">{{ user.name }}</p>
+                                            <p class="text-[10px] font-medium text-slate-500 truncate mt-0.5">Beli: <span class="font-bold text-slate-700">{{ user.course }}</span></p>
+                                        </div>
+                                        <span class="text-[9px] font-bold text-emerald-600 bg-emerald-100 px-2 py-1 rounded-md shrink-0">{{ user.time }}</span>
+                                    </div>
+                                </div>
+                                <button class="w-full mt-5 py-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition shadow-sm">Lihat Seluruh Aktivitas</button>
+                            </div>
+                        </div>
+
+                        <!-- Table: Approval Instruktur -->
+                        <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden mt-2 animate-slide-up" style="animation-delay: 0.2s;">
+                            <div class="p-6 md:p-8 border-b border-slate-100 flex flex-col sm:flex-row sm:justify-between sm:items-center bg-slate-50/80 gap-4">
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-900 mb-1">Persetujuan Instruktur Baru</h3>
+                                    <p class="text-xs text-slate-500 font-medium">Aplikasi pendaftaran mentor yang perlu ditinjau sebelum masuk sistem.</p>
+                                </div>
+                                <span class="bg-amber-100 text-amber-700 border border-amber-200 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center w-max"><i class="ph-bold ph-warning-circle mr-1.5 text-lg"></i> 2 Menunggu Review</span>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm whitespace-nowrap">
+                                    <thead class="bg-white border-b border-slate-100 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                                        <tr>
+                                            <th class="px-8 py-5">Profil Pelamar</th>
+                                            <th class="px-8 py-5">Topik Spesialisasi</th>
+                                            <th class="px-8 py-5">Dokumen CV</th>
+                                            <th class="px-8 py-5 text-right">Tindakan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-50">
+                                        <tr v-for="i in 2" :key="i" class="hover:bg-slate-50 transition-colors">
+                                            <td class="px-8 py-4">
+                                                <div class="flex items-center">
+                                                    <img :src="`https://i.pravatar.cc/150?img=${i+50}`" class="w-12 h-12 rounded-full border border-slate-200 mr-4 shadow-sm object-cover">
+                                                    <div>
+                                                        <div class="font-bold text-slate-900 text-base">Argo Pratama</div>
+                                                        <div class="text-[11px] text-slate-500 font-medium mt-0.5">argo@example.com</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="px-8 py-4">
+                                                <span class="bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold">DevOps & Cloud</span>
+                                            </td>
+                                            <td class="px-8 py-4">
+                                                <a href="#" @click.prevent="showToast('Sedang membuka dokumen CV...', 'info')" class="inline-flex items-center text-slate-600 font-bold hover:text-primary-600 text-xs bg-white border border-slate-200 px-4 py-2 rounded-xl hover:border-primary-300 shadow-sm transition-colors">
+                                                    <i class="ph-bold ph-file-pdf mr-2 text-lg text-red-500"></i> Lihat PDF
+                                                </a>
+                                            </td>
+                                            <td class="px-8 py-4 text-right">
+                                                <div class="flex justify-end gap-2">
+                                                    <button @click="showToast('Aplikasi mentor berhasil diterima!')" class="px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-500 hover:text-white border border-emerald-200 rounded-xl font-bold text-xs transition shadow-sm">Terima</button>
+                                                    <button @click="showToast('Aplikasi mentor ditolak.', 'info')" class="px-4 py-2 bg-red-50 text-red-700 hover:bg-red-500 hover:text-white border border-red-200 rounded-xl font-bold text-xs transition shadow-sm">Tolak</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </template>
+                    
+                    <template v-else-if="currentMenu === 'users'">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 animate-fade-in">
+                            <div>
+                                <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Data Pengguna</h1>
+                                <p class="text-sm text-slate-500 mt-1">Manajemen seluruh pengguna aktif di platform EduTech.</p>
+                            </div>
+                            <button @click="openModal('add-user')" class="px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-bold hover:bg-primary-700 shadow-md transition flex items-center"><i class="ph-bold ph-plus mr-2"></i> Tambah User</button>
+                        </div>
+                        <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden animate-slide-up">
+                            <div class="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row gap-4 bg-slate-50/50">
+                                <input type="text" placeholder="Cari nama atau email..." class="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 shadow-sm">
+                                <select class="bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 outline-none cursor-pointer shadow-sm">
+                                    <option>Semua Role</option>
+                                    <option>Siswa</option>
+                                    <option>Instruktur</option>
+                                </select>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm whitespace-nowrap">
+                                    <thead class="bg-white border-b border-slate-100 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                                        <tr>
+                                            <th class="px-6 py-4">Informasi Pengguna</th>
+                                            <th class="px-6 py-4">Role System</th>
+                                            <th class="px-6 py-4">Status Akun</th>
+                                            <th class="px-6 py-4 text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-50">
+                                        <tr class="hover:bg-slate-50 transition-colors">
+                                            <td class="px-6 py-4 flex items-center gap-4">
+                                                <img src="https://i.pravatar.cc/150?img=12" class="w-10 h-10 rounded-full object-cover border border-slate-200">
+                                                <div><p class="font-bold text-slate-900">Andi Kusuma</p><p class="text-[10px] text-slate-500">andi@example.com</p></div>
+                                            </td>
+                                            <td class="px-6 py-4"><span class="bg-blue-50 text-blue-600 border border-blue-100 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase">Siswa</span></td>
+                                            <td class="px-6 py-4"><span class="flex items-center text-emerald-600 text-xs font-bold"><i class="ph-fill ph-check-circle mr-1.5"></i> Aktif</span></td>
+                                            <td class="px-6 py-4 text-right space-x-2">
+                                                <button class="p-2 bg-slate-50 border border-slate-200 text-slate-600 hover:text-primary-600 hover:border-primary-300 rounded-lg transition shadow-sm"><i class="ph-bold ph-pencil-simple"></i></button>
+                                                <button @click="showToast('Akun berhasil dihapus!', 'success')" class="p-2 bg-slate-50 border border-slate-200 text-slate-600 hover:text-red-600 hover:border-red-300 rounded-lg transition shadow-sm"><i class="ph-bold ph-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-50 transition-colors">
+                                            <td class="px-6 py-4 flex items-center gap-4">
+                                                <img src="https://i.pravatar.cc/150?img=8" class="w-10 h-10 rounded-full object-cover border border-slate-200">
+                                                <div><p class="font-bold text-slate-900">Budi Santoso</p><p class="text-[10px] text-slate-500">budi@mentor.id</p></div>
+                                            </td>
+                                            <td class="px-6 py-4"><span class="bg-purple-50 text-purple-600 border border-purple-100 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase">Instruktur</span></td>
+                                            <td class="px-6 py-4"><span class="flex items-center text-emerald-600 text-xs font-bold"><i class="ph-fill ph-check-circle mr-1.5"></i> Aktif</span></td>
+                                            <td class="px-6 py-4 text-right space-x-2">
+                                                <button class="p-2 bg-slate-50 border border-slate-200 text-slate-600 hover:text-primary-600 hover:border-primary-300 rounded-lg transition shadow-sm"><i class="ph-bold ph-pencil-simple"></i></button>
+                                                <button @click="showToast('Akun berhasil dihapus!', 'success')" class="p-2 bg-slate-50 border border-slate-200 text-slate-600 hover:text-red-600 hover:border-red-300 rounded-lg transition shadow-sm"><i class="ph-bold ph-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template v-else-if="currentMenu === 'transactions'">
+                        <div class="mb-6 animate-fade-in">
+                            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Verifikasi Transaksi</h1>
+                            <p class="text-sm text-slate-500 mt-1">Pantau pembayaran masuk dari siswa (*Payment Gateway*).</p>
+                        </div>
+                        <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden animate-slide-up">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm whitespace-nowrap">
+                                    <thead class="bg-slate-50 border-b border-slate-100 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                                        <tr>
+                                            <th class="px-6 py-5">ID Transaksi</th>
+                                            <th class="px-6 py-5">Nama Siswa</th>
+                                            <th class="px-6 py-5">Item Pembelian</th>
+                                            <th class="px-6 py-5">Nominal Bayar</th>
+                                            <th class="px-6 py-5 text-right">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-50">
+                                        <tr class="hover:bg-slate-50 transition-colors">
+                                            <td class="px-6 py-4 font-mono text-xs text-slate-500">TRX-98231A</td>
+                                            <td class="px-6 py-4 font-bold text-slate-900">Siti Aminah</td>
+                                            <td class="px-6 py-4 text-xs font-semibold text-slate-600 truncate max-w-[200px]">Fundamental Golang API</td>
+                                            <td class="px-6 py-4 font-black text-slate-900">Rp 250.000</td>
+                                            <td class="px-6 py-4 text-right"><span class="bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase border border-emerald-200">Sukses</span></td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-50 transition-colors">
+                                            <td class="px-6 py-4 font-mono text-xs text-slate-500">TRX-98232B</td>
+                                            <td class="px-6 py-4 font-bold text-slate-900">Kevin Pratama</td>
+                                            <td class="px-6 py-4 text-xs font-semibold text-slate-600 truncate max-w-[200px]">Mastering Nuxt 4 & Vue</td>
+                                            <td class="px-6 py-4 font-black text-slate-900">Rp 400.000</td>
+                                            <td class="px-6 py-4 text-right"><span class="bg-amber-50 text-amber-600 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase border border-amber-200">Menunggu</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template v-else-if="currentMenu === 'content'">
+                        <div class="mb-6 animate-fade-in">
+                            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Moderasi Instruktur</h1>
+                            <p class="text-sm text-slate-500 mt-1">Halaman khusus untuk meninjau konten dan aplikasi instruktur.</p>
+                        </div>
+                        <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden animate-slide-up">
+                            <div class="p-6 md:p-8 border-b border-slate-100 flex flex-col sm:flex-row sm:justify-between sm:items-center bg-slate-50/80 gap-4">
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-900 mb-1">Persetujuan Instruktur Baru</h3>
+                                    <p class="text-xs text-slate-500 font-medium">Aplikasi pendaftaran mentor yang perlu ditinjau sebelum masuk sistem.</p>
+                                </div>
+                                <span class="bg-amber-100 text-amber-700 border border-amber-200 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center w-max"><i class="ph-bold ph-warning-circle mr-1.5 text-lg"></i> 2 Menunggu Review</span>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm whitespace-nowrap">
+                                    <thead class="bg-white border-b border-slate-100 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                                        <tr>
+                                            <th class="px-8 py-5">Profil Pelamar</th>
+                                            <th class="px-8 py-5">Topik Spesialisasi</th>
+                                            <th class="px-8 py-5">Dokumen CV</th>
+                                            <th class="px-8 py-5 text-right">Tindakan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-50">
+                                        <tr v-for="i in 2" :key="i" class="hover:bg-slate-50 transition-colors">
+                                            <td class="px-8 py-4">
+                                                <div class="flex items-center">
+                                                    <img :src="`https://i.pravatar.cc/150?img=${i+50}`" class="w-12 h-12 rounded-full border border-slate-200 mr-4 shadow-sm object-cover">
+                                                    <div>
+                                                        <div class="font-bold text-slate-900 text-base">Argo Pratama</div>
+                                                        <div class="text-[11px] text-slate-500 font-medium mt-0.5">argo@example.com</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="px-8 py-4">
+                                                <span class="bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold">DevOps & Cloud</span>
+                                            </td>
+                                            <td class="px-8 py-4">
+                                                <a href="#" @click.prevent="showToast('Sedang membuka dokumen CV...', 'info')" class="inline-flex items-center text-slate-600 font-bold hover:text-primary-600 text-xs bg-white border border-slate-200 px-4 py-2 rounded-xl hover:border-primary-300 shadow-sm transition-colors">
+                                                    <i class="ph-bold ph-file-pdf mr-2 text-lg text-red-500"></i> Lihat PDF
+                                                </a>
+                                            </td>
+                                            <td class="px-8 py-4 text-right">
+                                                <div class="flex justify-end gap-2">
+                                                    <button @click="showToast('Aplikasi mentor berhasil diterima!')" class="px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-500 hover:text-white border border-emerald-200 rounded-xl font-bold text-xs transition shadow-sm">Terima</button>
+                                                    <button @click="showToast('Aplikasi mentor ditolak.', 'info')" class="px-4 py-2 bg-red-50 text-red-700 hover:bg-red-500 hover:text-white border border-red-200 rounded-xl font-bold text-xs transition shadow-sm">Tolak</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template v-else-if="currentMenu === 'settings'">
+                        <div class="mb-6 animate-fade-in">
+                            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Pengaturan Global</h1>
+                            <p class="text-sm text-slate-500 mt-1">Konfigurasi operasional platform EduTech.</p>
+                        </div>
+                        <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-6 sm:p-10 animate-slide-up max-w-3xl">
+                            <form @submit.prevent="showToast('Pengaturan Global Berhasil Disimpan!')" class="space-y-6">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Nama Platform</label>
+                                    <input type="text" value="EduTech LMS" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
+                                </div>
+                                <div class="grid sm:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Email Support</label>
+                                        <input type="email" value="support@edutech.id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Mata Uang Default</label>
+                                        <select class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all cursor-pointer shadow-sm">
+                                            <option>IDR (Rupiah)</option>
+                                            <option>USD (US Dollar)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="pt-6 border-t border-slate-100">
+                                    <button type="submit" class="w-full sm:w-auto px-8 py-3.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-primary-600 shadow-md transition-all active:scale-95 flex items-center justify-center"><i class="ph-bold ph-floppy-disk mr-2"></i> Simpan Konfigurasi</button>
+                                </div>
+                            </form>
+                        </div>
+                    </template>
+                </template>
+
+                <!-- ==============================================
+                     2. VIEW: INSTRUCTOR
+                =============================================== -->
+                <template v-else-if="role === 'instructor'">
+                    <template v-if="currentMenu === 'dashboard'">
+                        <div class="bg-slate-900 rounded-[2.5rem] p-8 md:p-12 text-white shadow-xl relative overflow-hidden mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 animate-fade-in">
+                            <div class="absolute top-0 right-0 w-64 h-64 bg-primary-600 rounded-full blur-[80px] opacity-40"></div>
+                            <div class="absolute bottom-0 left-0 w-64 h-64 bg-blue-500 rounded-full blur-[80px] opacity-20 translate-y-1/2 -translate-x-1/4"></div>
+                            
+                            <div class="relative z-10">
+                                <span class="inline-flex items-center bg-white/10 border border-white/20 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-4"><span class="w-1.5 h-1.5 bg-emerald-400 rounded-full mr-2 shadow-[0_0_5px_#34d399]"></span> Mode Instruktur Aktif</span>
+                                <h1 class="text-3xl sm:text-4xl font-black mb-3 tracking-tight leading-tight">Kinerja Mengajar Anda, Budi!</h1>
+                                <p class="text-slate-300 text-sm max-w-lg leading-relaxed">Anda memiliki <strong class="text-white">5 pertanyaan baru</strong> dari siswa di forum diskusi. Balas segera untuk menjaga rating kelas Anda tetap tinggi.</p>
+                            </div>
+                            <button @click="openModal('add-course')" class="relative z-10 px-8 py-4 bg-primary-600 text-white rounded-xl font-bold text-sm hover:bg-primary-500 transition shadow-lg shadow-primary-500/30 shrink-0 flex items-center active:scale-95 border border-primary-500"><i class="ph-bold ph-video-camera mr-2 text-xl"></i> Buat Kelas Baru</button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 animate-slide-up">
+                            <div class="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200 shadow-sm flex items-center justify-between hover:-translate-y-1 transition-transform group cursor-pointer">
+                                <div>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Total Siswa Anda</p>
+                                    <h3 class="text-3xl font-black text-slate-900 group-hover:text-primary-600 transition-colors">1,248</h3>
+                                </div>
+                                <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-3xl border border-blue-100"><i class="ph-duotone ph-users-three"></i></div>
+                            </div>
+                            <div class="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200 shadow-sm flex items-center justify-between hover:-translate-y-1 transition-transform group cursor-pointer">
+                                <div>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Rating Rata-rata</p>
+                                    <h3 class="text-3xl font-black text-slate-900 flex items-center group-hover:text-yellow-600 transition-colors">4.8 <i class="ph-fill ph-star text-yellow-400 ml-2 text-2xl"></i></h3>
+                                </div>
+                                <div class="w-16 h-16 bg-yellow-50 text-yellow-600 rounded-2xl flex items-center justify-center text-3xl border border-yellow-100"><i class="ph-duotone ph-star-half"></i></div>
+                            </div>
+                            <div class="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200 shadow-sm flex items-center justify-between hover:-translate-y-1 transition-transform group cursor-pointer">
+                                <div>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Estimasi Pemasukan</p>
+                                    <h3 class="text-3xl font-black text-emerald-600">Rp 12.4M</h3>
+                                </div>
+                                <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-3xl border border-emerald-100"><i class="ph-duotone ph-wallet"></i></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden animate-slide-up" style="animation-delay: 0.1s;">
+                            <div class="p-6 md:p-8 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-50/50 gap-4">
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-900 mb-1">Forum Diskusi: Menunggu Jawaban</h3>
+                                    <p class="text-xs text-slate-500 font-medium">Bantu siswa Anda memecahkan masalah koding mereka.</p>
+                                </div>
+                                <button @click="currentMenu = 'discussions'" class="text-sm font-bold text-primary-600 hover:text-white bg-primary-50 hover:bg-primary-600 px-5 py-2.5 rounded-xl border border-primary-100 transition-colors shadow-sm">Buka Forum Penuh</button>
+                            </div>
+                            <div class="divide-y divide-slate-100 p-6 md:p-8 space-y-6">
+                                <div v-for="i in 2" :key="i" class="border border-slate-200 p-6 rounded-[1.5rem] bg-white hover:border-primary-300 hover:shadow-lg transition-all flex flex-col sm:flex-row gap-5">
+                                    <div class="shrink-0"><img :src="`https://i.pravatar.cc/150?img=${i+10}`" class="w-12 h-12 rounded-full object-cover border border-slate-200 shadow-sm"></div>
+                                    <div class="flex-1">
+                                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2 gap-2 sm:gap-0">
+                                            <h4 class="font-bold text-slate-900 text-base">Error install Laravel Sanctum</h4>
+                                            <span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 w-max"><i class="ph-bold ph-clock mr-1.5"></i> 2 jam lalu</span>
+                                        </div>
+                                        <p class="text-[10px] text-primary-600 font-bold mb-3 uppercase tracking-wider bg-primary-50 px-2 py-0.5 rounded inline-block">Modul: Fullstack Web Laravel 13</p>
+                                        <div class="text-sm text-slate-600 leading-relaxed mb-5 bg-slate-50 p-4 rounded-xl border border-slate-100">"Halo mas Budi, saya mengikuti instruksi di video tapi saat menjalankan composer require muncul peringatan error..."</div>
+                                        <div class="flex flex-wrap gap-3">
+                                            <button @click="openModal('reply-qna')" class="px-5 py-2.5 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-primary-600 transition shadow-md"><i class="ph-bold ph-chat-teardrop-text mr-2"></i> Ketik Balasan</button>
+                                            <button @click="showToast('Diskusi ditandai selesai.')" class="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition"><i class="ph-bold ph-check mr-2"></i> Tandai Selesai</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template v-else-if="currentMenu === 'courses'">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 animate-fade-in">
+                            <div>
+                                <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Kelola Kelas Saya</h1>
+                                <p class="text-sm text-slate-500 mt-1">Daftar modul dan video yang Anda publikasikan.</p>
+                            </div>
+                            <button @click="openModal('add-course')" class="w-full sm:w-auto px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-bold hover:bg-primary-700 shadow-md transition flex items-center justify-center"><i class="ph-bold ph-plus mr-2"></i> Buat Kelas Baru</button>
+                        </div>
+                        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-slide-up">
+                            <div v-for="(course, idx) in instructorCourses" :key="idx" class="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden group hover:shadow-xl transition-all">
+                                <div class="w-full aspect-video bg-slate-100 relative overflow-hidden">
+                                    <img :src="course.img" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                    <div class="absolute top-3 right-3 px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider" :class="course.status === 'Published' ? 'bg-emerald-500 text-white shadow-md' : 'bg-amber-400 text-slate-900 shadow-md'">{{ course.status }}</div>
+                                </div>
+                                <div class="p-5 flex flex-col h-full">
+                                    <h3 class="font-bold text-slate-900 text-sm mb-4 line-clamp-2 leading-snug">{{ course.title }}</h3>
+                                    <div class="grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 mb-4 mt-auto">
+                                        <div><p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Siswa</p><p class="font-black text-slate-800">{{ course.students }}</p></div>
+                                        <div><p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Penghasilan</p><p class="font-black text-emerald-600">{{ course.revenue }}</p></div>
+                                    </div>
+                                    <button class="w-full py-2.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-900 hover:text-white transition">Edit Materi</button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template v-else-if="currentMenu === 'discussions'">
+                        <div class="mb-6 animate-fade-in">
+                            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Forum Q&A Kelas</h1>
+                            <p class="text-sm text-slate-500 mt-1">Interaksi langsung dan bantu kendala siswa Anda.</p>
+                        </div>
+                        <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden animate-slide-up">
+                            <div class="p-6 md:p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                <h3 class="text-lg font-bold text-slate-900">Menunggu Balasan Instruktur</h3>
+                                <span class="bg-red-100 text-red-600 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center"><i class="ph-bold ph-warning-circle mr-1.5 text-lg"></i> 1 Mendesak</span>
+                            </div>
+                            <div class="divide-y divide-slate-100 p-6 md:p-8">
+                                <div class="border border-slate-200 p-6 rounded-[1.5rem] bg-white hover:border-primary-300 hover:shadow-lg transition-all flex flex-col sm:flex-row gap-5">
+                                    <div class="shrink-0"><img src="https://i.pravatar.cc/150?img=12" class="w-12 h-12 rounded-full object-cover border border-slate-200 shadow-sm"></div>
+                                    <div class="flex-1">
+                                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2 gap-2 sm:gap-0">
+                                            <h4 class="font-bold text-slate-900 text-base">Error saat install package Laravel Sanctum</h4>
+                                            <span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 w-max"><i class="ph-bold ph-clock mr-1.5"></i> 2 jam lalu</span>
+                                        </div>
+                                        <p class="text-[10px] text-primary-600 font-bold mb-3 uppercase tracking-wider bg-primary-50 px-2 py-0.5 rounded inline-block">Modul: Fullstack Web Laravel 13</p>
+                                        <div class="text-sm text-slate-600 leading-relaxed mb-5 bg-slate-50 p-4 rounded-xl border border-slate-100">"Halo mas Budi, saya mengalami kendala pada saat tahap migrasi database..."</div>
+                                        <div class="flex flex-wrap gap-3">
+                                            <button @click="openModal('reply-qna')" class="px-5 py-2.5 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-primary-600 transition shadow-md">Ketik Balasan</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template v-else-if="currentMenu === 'earnings'">
+                        <div class="mb-6 animate-fade-in">
+                            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Riwayat Pendapatan</h1>
+                            <p class="text-sm text-slate-500 mt-1">Saldo mengajar yang dapat ditarik (*Withdrawal*).</p>
+                        </div>
+                        <div class="grid md:grid-cols-3 gap-6 mb-8 animate-slide-up">
+                            <div class="md:col-span-1 bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-xl relative overflow-hidden">
+                                <div class="absolute top-0 right-0 w-32 h-32 bg-primary-600 rounded-full blur-[50px] opacity-50"></div>
+                                <div class="relative z-10 flex flex-col h-full justify-between">
+                                    <div>
+                                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Saldo Tersedia</p>
+                                        <h3 class="text-4xl font-black mb-2 text-primary-400">Rp 4.2Jt</h3>
+                                        <p class="text-xs text-slate-400 mb-8">Periode: 1 - 30 Mei 2026</p>
+                                    </div>
+                                    <button @click="openModal('withdraw')" class="w-full py-4 bg-primary-600 text-white rounded-xl font-bold text-sm hover:bg-primary-500 transition shadow-lg border border-primary-500 active:scale-95">Tarik Dana (Payout)</button>
+                                </div>
+                            </div>
+                            <div class="md:col-span-2 bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-8 flex flex-col items-center justify-center text-center">
+                                <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-4xl text-slate-300 mb-4 border border-slate-100"><i class="ph-duotone ph-receipt"></i></div>
+                                <h3 class="text-lg font-bold text-slate-900 mb-1">Belum Ada Riwayat Penarikan</h3>
+                                <p class="text-sm text-slate-500 max-w-sm">Semua transaksi penarikan dana ke rekening bank Anda akan dicatat di sini.</p>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template v-else-if="currentMenu === 'profile'">
+                        <div class="mb-6 animate-fade-in">
+                            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Pengaturan Profil</h1>
+                            <p class="text-sm text-slate-500 mt-1">Sesuaikan informasi publik Anda sebagai mentor untuk menarik lebih banyak siswa.</p>
+                        </div>
+                        <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-6 sm:p-10 animate-slide-up max-w-3xl">
+                            <div class="flex items-center gap-6 mb-8 border-b border-slate-100 pb-8">
+                                <img src="https://i.pravatar.cc/150?img=8" class="w-24 h-24 rounded-2xl object-cover shadow-sm border border-slate-200 bg-slate-50">
+                                <div>
+                                    <button @click="showToast('Fitur upload gambar akan aktif setelah integrasi API Storage.', 'info')" class="px-5 py-2.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl font-bold text-xs hover:bg-slate-100 transition shadow-sm mb-2 flex items-center"><i class="ph-bold ph-upload-simple mr-1.5 text-lg"></i> Ganti Foto Profil</button>
+                                    <p class="text-[10px] text-slate-500">Maks. 2MB. Format JPG, PNG.</p>
+                                </div>
+                            </div>
+                            <form @submit.prevent="showToast('Profil berhasil diperbarui!')" class="space-y-6">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Nama Tampilan</label>
+                                    <input type="text" value="Budi Santoso" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Pekerjaan & Perusahaan Saat Ini</label>
+                                    <input type="text" value="Senior Backend Engineer di Gojek" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Bio Singkat</label>
+                                    <textarea rows="4" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-700 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all resize-none shadow-sm">Seorang Engineer dengan 8+ tahun pengalaman membangun sistem Enterprise skala besar menggunakan ekosistem PHP dan Go.</textarea>
+                                </div>
+                                <div class="pt-6 border-t border-slate-100">
+                                    <button type="submit" class="w-full sm:w-auto px-8 py-3.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-primary-600 shadow-md transition-all active:scale-95 flex items-center justify-center"><i class="ph-bold ph-floppy-disk mr-2 text-lg"></i> Simpan Profil</button>
+                                </div>
+                            </form>
+                        </div>
+                    </template>
+
+                    <template v-else>
+                        <div class="flex flex-col items-center justify-center py-24 text-center bg-white rounded-[2rem] border border-slate-200 border-dashed animate-fade-in">
+                            <div class="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center text-4xl text-slate-300 mb-6"><i class="ph-duotone ph-hammer"></i></div>
+                            <h2 class="text-2xl font-black text-slate-900 mb-2">Halaman Instruktur</h2>
+                            <p class="text-slate-500 text-sm">Halaman ini belum tersedia.</p>
+                            <button @click="currentMenu = 'dashboard'" class="mt-6 px-8 py-3.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-primary-600 transition">Kembali ke Dashboard</button>
+                        </div>
+                    </template>
+                </template>
+
+
+                <!-- ==============================================
+                     3. VIEW: STUDENT
+                =============================================== -->
+                <template v-if="role === 'student'">
+                    <template v-if="currentMenu === 'dashboard'">
+                        <div class="bg-gradient-to-r from-blue-600 to-primary-600 rounded-[2.5rem] p-8 md:p-12 text-white shadow-xl shadow-primary-500/20 relative overflow-hidden mb-8 flex flex-col lg:flex-row items-center justify-between gap-8 md:gap-12 animate-fade-in">
+                            <div class="absolute top-0 right-0 w-[400px] h-[400px] bg-white rounded-full blur-[100px] opacity-10 pointer-events-none"></div>
+                            
+                            <div class="relative z-10 w-full lg:w-3/5">
+                                <span class="bg-white/20 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg uppercase tracking-widest mb-4 border border-white/20 inline-block backdrop-blur-sm">Teruskan Belajarmu</span>
+                                <h1 class="text-3xl sm:text-4xl font-black mb-3 leading-tight tracking-tight">Halo Andi! Saatnya kembali ngoding. ðŸš€</h1>
+                                <p class="text-blue-100 text-sm sm:text-base mb-8 max-w-md leading-relaxed">Anda sedang mempelajari <span class="font-bold text-white">"Fullstack Web: Nuxt 4 & Laravel 13"</span>. Konsistensi adalah kunci, sisa 4 modul lagi menuju kelulusan Anda.</p>
+                                
+                                <div class="bg-black/20 p-5 rounded-2xl backdrop-blur-md border border-white/10 max-w-sm">
+                                    <div class="flex justify-between items-end mb-3">
+                                        <span class="text-xs font-bold uppercase tracking-wider text-blue-200 flex items-center"><i class="ph-bold ph-chart-line-up mr-2 text-primary-300"></i> Progress Keseluruhan</span>
+                                        <span class="text-xl font-black text-white">65%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-800/80 rounded-full h-3 overflow-hidden shadow-inner">
+                                        <div class="bg-gradient-to-r from-blue-400 to-white h-3 rounded-full relative" style="width: 65%">
+                                            <div class="absolute inset-0 bg-white/20 animate-pulse"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="relative z-10 w-full sm:w-2/3 lg:w-2/5 shrink-0 group cursor-pointer">
+                                <div class="aspect-video rounded-2xl overflow-hidden border border-white/20 shadow-2xl relative bg-slate-800">
+                                    <img src="https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&q=80" class="w-full h-full object-cover opacity-60 group-hover:scale-105 group-hover:opacity-90 transition-all duration-500">
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <div class="w-16 h-16 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-primary-600 shadow-[0_0_30px_rgba(255,255,255,0.4)] group-hover:scale-110 transition-transform">
+                                            <i class="ph-fill ph-play text-2xl ml-1"></i>
+                                        </div>
+                                    </div>
+                                    <div class="absolute top-4 left-4 bg-primary-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg uppercase tracking-wider shadow-md">Lanjut Episode 12</div>
+                                </div>
+                                <button @click="showToast('Video Player Sedang Memuat...')" class="w-full mt-4 py-4 bg-white text-primary-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition shadow-lg active:scale-95 flex items-center justify-center border border-slate-200">Lanjutkan Menonton <i class="ph-bold ph-arrow-right ml-2 text-lg"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="mb-8 animate-slide-up">
+                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 border-b border-slate-200 pb-4">
+                                <div>
+                                    <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Kelas Aktif Anda</h2>
+                                    <p class="text-sm text-slate-500 mt-1">Daftar kelas premium yang sudah Anda beli.</p>
+                                </div>
+                                <button @click="currentMenu = 'catalog'" class="text-xs sm:text-sm font-bold text-primary-600 hover:bg-primary-50 px-4 py-2.5 rounded-xl transition-colors">Katalog Kelas Baru <i class="ph-bold ph-arrow-right inline-block align-middle ml-1"></i></button>
+                            </div>
+                            
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div class="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-xl hover:border-primary-300 hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col group cursor-pointer">
+                                    <div class="flex flex-col sm:flex-row gap-5 mb-6">
+                                        <div class="w-full sm:w-28 aspect-video sm:aspect-square shrink-0 rounded-xl overflow-hidden bg-slate-100 border border-slate-100 relative">
+                                            <img src="https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                                            <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                <i class="ph-fill ph-play-circle text-white text-3xl"></i>
+                                            </div>
+                                        </div>
+                                        <div class="flex flex-col justify-center">
+                                            <span class="text-[9px] font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded uppercase tracking-wider mb-2 w-max border border-primary-100">Web Development</span>
+                                            <h3 class="font-bold text-slate-900 text-base leading-snug line-clamp-2 group-hover:text-primary-600 transition-colors">Fullstack Web: Nuxt 4 & Laravel 13 API Enterprise</h3>
+                                        </div>
+                                    </div>
+                                    <div class="mt-auto pt-5 border-t border-slate-100">
+                                        <div class="flex justify-between items-center mb-2.5">
+                                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Progress Belajar</span>
+                                            <span class="text-xs font-black text-primary-600">65% Selesai</span>
+                                        </div>
+                                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner">
+                                            <div class="bg-primary-500 h-2 rounded-full transition-all duration-1000" style="width: 65%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col group cursor-pointer relative overflow-hidden">
+                                    <div class="absolute -right-10 -top-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl"></div>
+                                    <div class="flex flex-col sm:flex-row gap-5 mb-6 relative z-10">
+                                        <div class="w-full sm:w-28 aspect-video sm:aspect-square shrink-0 rounded-xl overflow-hidden bg-slate-100 border border-slate-100">
+                                            <img src="https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                                        </div>
+                                        <div class="flex flex-col justify-center">
+                                            <span class="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded uppercase tracking-wider mb-2 w-max border border-emerald-100">Lulus</span>
+                                            <h3 class="font-bold text-slate-900 text-base leading-snug line-clamp-2">Dasar Pemrograman Web: HTML, CSS & JS</h3>
+                                        </div>
+                                    </div>
+                                    <div class="mt-auto pt-5 border-t border-slate-100 relative z-10">
+                                        <div class="flex justify-between items-center mb-2.5">
+                                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center"><i class="ph-fill ph-check-circle text-emerald-500 mr-1.5 text-lg"></i> Kelas Selesai</span>
+                                            <span class="text-xs font-black text-emerald-600">100%</span>
+                                        </div>
+                                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner mb-4">
+                                            <div class="bg-emerald-500 h-2 rounded-full transition-all duration-1000" style="width: 100%"></div>
+                                        </div>
+                                        <button @click.stop="showToast('Sertifikat berhasil diunduh ke perangkat Anda!')" class="w-full py-2.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200 hover:bg-emerald-500 hover:text-white transition shadow-sm flex items-center justify-center"><i class="ph-bold ph-certificate mr-2 text-lg"></i> Unduh Sertifikat Digital</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template v-else-if="currentMenu === 'catalog'">
+                        <div class="mb-6 animate-fade-in">
+                            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Katalog Kelas</h1>
+                            <p class="text-sm text-slate-500 mt-1">Eksplorasi kelas premium baru untuk menaikkan nilai portofolio Anda.</p>
+                        </div>
+                        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-slide-up">
+                            <div class="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 p-5 flex flex-col group cursor-pointer">
+                                <div class="w-full aspect-video rounded-xl bg-slate-100 mb-4 overflow-hidden relative">
+                                    <img src="https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=400&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                                </div>
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Backend & Database</span>
+                                <h3 class="font-bold text-slate-900 text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-primary-600 transition-colors mb-4">Mastering PostgreSQL 17 & Redis 7 Caching</h3>
+                                <div class="mt-auto pt-4 border-t border-slate-100 flex justify-between items-center">
+                                    <span class="text-xs font-bold text-slate-500"><i class="ph-fill ph-star text-yellow-400 mr-1 text-lg align-text-bottom"></i> 4.8</span>
+                                    <button @click.stop="showToast('Sistem Pembayaran sedang Maintenance', 'info')" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md hover:bg-primary-600 transition">Rp 399.000</button>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 p-5 flex flex-col group cursor-pointer">
+                                <div class="w-full aspect-video rounded-xl bg-slate-100 mb-4 overflow-hidden relative">
+                                    <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                                </div>
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">DevOps & Cloud</span>
+                                <h3 class="font-bold text-slate-900 text-sm sm:text-base leading-snug line-clamp-2 group-hover:text-primary-600 transition-colors mb-4">Docker Compose & Nginx Proxy Setup</h3>
+                                <div class="mt-auto pt-4 border-t border-slate-100 flex justify-between items-center">
+                                    <span class="text-xs font-bold text-slate-500"><i class="ph-fill ph-star text-yellow-400 mr-1 text-lg align-text-bottom"></i> 5.0</span>
+                                    <button @click.stop="showToast('Sistem Pembayaran sedang Maintenance', 'info')" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md hover:bg-primary-600 transition">Rp 549.000</button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template v-else-if="currentMenu === 'certificates'">
+                        <div class="mb-10 border-b border-slate-200 pb-6 flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 animate-fade-in">
+                            <div>
+                                <h1 class="text-3xl font-black text-slate-900 tracking-tight">Koleksi Sertifikat Anda</h1>
+                                <p class="text-sm text-slate-500 mt-2">Sertifikat kelulusan resmi yang bisa dilampirkan di LinkedIn atau CV.</p>
+                            </div>
+                            <span class="bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold text-xs px-3 py-1.5 rounded-lg flex items-center w-max"><i class="ph-bold ph-medal text-lg mr-2"></i> 1 Sertifikat Diperoleh</span>
+                        </div>
+                        
+                        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-slide-up">
+                            <div class="bg-white border border-slate-200 shadow-sm rounded-[2rem] p-6 flex flex-col hover:shadow-xl hover:border-primary-300 transition-all group">
+                                <div class="w-full aspect-[4/3] bg-slate-100 rounded-xl mb-6 relative overflow-hidden border border-slate-200 shadow-inner group cursor-pointer">
+                                    <img src="https://images.unsplash.com/photo-1523800503107-5bc3ba2a6f81?q=80&w=600" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90">
+                                    <div class="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center backdrop-blur-sm gap-3">
+                                        <button @click="showToast('Mengunduh Sertifikat High Resolution...', 'info')" class="w-14 h-14 bg-white text-primary-600 rounded-full flex items-center justify-center text-2xl font-bold shadow-2xl hover:scale-110 transition-transform" title="Unduh PDF Resmi"><i class="ph-bold ph-download-simple"></i></button>
+                                        <span class="text-white text-[10px] font-bold tracking-widest uppercase">Unduh PDF Resolusi Tinggi</span>
+                                    </div>
+                                    <div class="absolute top-3 left-3 bg-emerald-500 text-white px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider flex items-center shadow-md"><i class="ph-bold ph-check-circle mr-1"></i> Verified</div>
+                                </div>
+                                <div class="text-center flex-1 flex flex-col">
+                                    <span class="text-[9px] font-bold text-primary-600 bg-primary-50 w-max mx-auto px-2.5 py-1 rounded-md border border-primary-100 uppercase tracking-wider mb-3">Web Development</span>
+                                    <h3 class="font-bold text-slate-900 text-lg leading-tight mb-2">Dasar Pemrograman Web: HTML, CSS & JS</h3>
+                                    <p class="text-xs text-slate-500 mb-6 font-medium mt-auto border-t border-slate-100 pt-4">Diterbitkan: 12 Apr 2026<br><span class="font-mono text-[10px] text-slate-400 mt-1 inline-block">ID: EDT-2026-X89J</span></p>
+                                    <button @click="showToast('Dialihkan ke LinkedIn...', 'info')" class="w-full py-3.5 bg-[#0A66C2] text-white font-bold text-xs rounded-xl hover:bg-[#004182] transition shadow-md shadow-[#0A66C2]/30 flex items-center justify-center active:scale-95"><i class="ph-fill ph-linkedin-logo mr-2 text-xl"></i> Tambahkan ke LinkedIn</button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-slate-50 border-2 border-slate-200 border-dashed rounded-[2rem] p-8 flex flex-col items-center justify-center text-center relative overflow-hidden group">
+                                <div class="w-20 h-20 bg-white rounded-2xl flex items-center justify-center text-4xl text-slate-300 mb-5 border border-slate-200 shadow-sm"><i class="ph-duotone ph-lock-key"></i></div>
+                                <span class="text-[10px] font-bold text-primary-600 bg-primary-50 border border-primary-100 px-3 py-1 rounded-full uppercase tracking-wider mb-3 shadow-sm">Progress 65%</span>
+                                <h3 class="font-bold text-slate-700 text-lg mb-3 leading-tight">Fullstack Web: Nuxt 4 & Laravel 13</h3>
+                                <p class="text-xs text-slate-500 max-w-[220px] leading-relaxed mb-6">Selesaikan 4 modul dan project akhir yang tersisa untuk membuka sertifikat eksklusif ini.</p>
+                                <button @click="currentMenu = 'dashboard'" class="px-6 py-3 bg-white border border-slate-200 text-sm font-bold text-slate-700 rounded-xl hover:text-primary-600 hover:border-primary-200 shadow-sm transition">Lanjut Belajar <i class="ph-bold ph-arrow-right ml-1 align-middle"></i></button>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template v-else-if="currentMenu === 'transactions'">
+                        <div class="mb-6 animate-fade-in">
+                            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Riwayat Pembelian</h1>
+                            <p class="text-sm text-slate-500 mt-1">Daftar transaksi dan faktur (*invoice*) kelas yang pernah Anda lakukan.</p>
+                        </div>
+                        <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden animate-slide-up">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm whitespace-nowrap">
+                                    <thead class="bg-slate-50 border-b border-slate-100 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                                        <tr>
+                                            <th class="px-6 py-5">No. Invoice</th>
+                                            <th class="px-6 py-5">Nama Kelas Premium</th>
+                                            <th class="px-6 py-5">Tanggal Pembelian</th>
+                                            <th class="px-6 py-5">Nominal Bayar</th>
+                                            <th class="px-6 py-5 text-right">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-50">
+                                        <tr class="hover:bg-slate-50 transition-colors">
+                                            <td class="px-6 py-4 font-mono text-xs text-slate-500 font-bold">INV-889921</td>
+                                            <td class="px-6 py-4 font-bold text-slate-900">Fullstack Web: Nuxt 4 & Laravel 13</td>
+                                            <td class="px-6 py-4 text-xs font-semibold text-slate-600">10 Mei 2026</td>
+                                            <td class="px-6 py-4 font-black text-slate-900">Rp 499.000</td>
+                                            <td class="px-6 py-4 text-right"><span class="bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase border border-emerald-200">Berhasil</span></td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-50 transition-colors">
+                                            <td class="px-6 py-4 font-mono text-xs text-slate-500 font-bold">INV-772810</td>
+                                            <td class="px-6 py-4 font-bold text-slate-900">Dasar Pemrograman Web (Promo)</td>
+                                            <td class="px-6 py-4 text-xs font-semibold text-slate-600">01 Apr 2026</td>
+                                            <td class="px-6 py-4 font-black text-slate-900">Rp 0 (Gratis)</td>
+                                            <td class="px-6 py-4 text-right"><span class="bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase border border-emerald-200">Berhasil</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template v-else-if="currentMenu === 'settings'">
+                        <div class="mb-6 animate-fade-in">
+                            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Pengaturan Akun</h1>
+                            <p class="text-sm text-slate-500 mt-1">Perbarui identitas profil dan keamanan sandi Anda di sini.</p>
+                        </div>
+                        <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-6 sm:p-10 animate-slide-up max-w-3xl">
+                            <div class="flex items-center gap-6 mb-8 border-b border-slate-100 pb-8">
+                                <img src="https://i.pravatar.cc/150?img=12" class="w-20 h-20 rounded-full object-cover shadow-sm border border-slate-200 bg-slate-50">
+                                <div>
+                                    <button @click="showToast('Fitur upload gambar akan aktif setelah integrasi API Storage.', 'info')" class="px-5 py-2.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl font-bold text-xs hover:bg-slate-100 transition shadow-sm mb-2 flex items-center"><i class="ph-bold ph-upload-simple mr-1.5 text-lg"></i> Unggah Avatar</button>
+                                    <p class="text-[10px] text-slate-500">Maks. 1MB. Format JPG, PNG.</p>
+                                </div>
+                            </div>
+                            <form @submit.prevent="showToast('Profil berhasil diperbarui!')" class="space-y-6">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Nama Lengkap</label>
+                                    <input type="text" value="Andi Kusuma" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Email</label>
+                                    <input type="email" value="andi@example.com" disabled class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-400 outline-none cursor-not-allowed">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Password Baru</label>
+                                    <input type="password" placeholder="Masukkan sandi baru..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
+                                </div>
+                                <div class="pt-6 border-t border-slate-100">
+                                    <button type="submit" class="w-full sm:w-auto px-8 py-3.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-primary-600 shadow-md transition-all active:scale-95 flex items-center justify-center"><i class="ph-bold ph-floppy-disk mr-2 text-lg"></i> Simpan Perubahan</button>
+                                </div>
+                            </form>
+                        </div>
+                    </template>
+                    
+                    <template v-else>
+                        <div class="flex flex-col items-center justify-center py-24 text-center bg-white rounded-[2rem] border border-slate-200 border-dashed animate-fade-in">
+                            <div class="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center text-4xl text-slate-300 mb-6 border border-slate-100 shadow-sm"><i class="ph-duotone ph-hammer"></i></div>
+                            <h2 class="text-2xl font-black text-slate-900 mb-2">Halaman Siswa</h2>
+                            <p class="text-slate-500 max-w-sm mx-auto text-sm leading-relaxed">Fitur ini belum tersedia.</p>
+                            <button @click="currentMenu = 'dashboard'" class="mt-6 px-8 py-3.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-primary-600 transition shadow-lg active:scale-95">Kembali ke Dasbor</button>
+                        </div>
+                    </template>
+                </template>
+
+
+                <!-- ==============================================
+                     3. VIEW: STUDENT
+                =============================================== -->
+                <template v-if="role === 'student'">
+                    <template v-if="currentMenu === 'dashboard'">
+                        <div class="bg-gradient-to-r from-blue-600 to-primary-600 rounded-[2.5rem] p-8 md:p-12 text-white shadow-xl shadow-primary-500/20 relative overflow-hidden mb-8 flex flex-col lg:flex-row items-center justify-between gap-8 md:gap-12 animate-fade-in">
+                            <div class="absolute top-0 right-0 w-[400px] h-[400px] bg-white rounded-full blur-[100px] opacity-10 pointer-events-none"></div>
+                            
+                            <div class="relative z-10 w-full lg:w-3/5">
+                                <span class="bg-white/20 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg uppercase tracking-widest mb-4 border border-white/20 inline-block backdrop-blur-sm">Teruskan Belajarmu</span>
+                                <h1 class="text-3xl sm:text-4xl font-black mb-3 leading-tight tracking-tight">Halo Andi! Saatnya kembali ngoding. ðŸš€</h1>
+                                <p class="text-blue-100 text-sm sm:text-base mb-8 max-w-md leading-relaxed">Anda sedang mempelajari <span class="font-bold text-white">"Fullstack Web: Nuxt 4 & Laravel 13"</span>. Konsistensi adalah kunci, sisa 4 modul lagi menuju kelulusan Anda.</p>
+                                
+                                <div class="bg-black/20 p-5 rounded-2xl backdrop-blur-md border border-white/10 max-w-sm">
+                                    <div class="flex justify-between items-end mb-2">
+                                        <span class="text-xs font-bold uppercase tracking-wider text-blue-200 flex items-center"><i class="ph-bold ph-chart-line-up mr-2 text-primary-300"></i> Progress Keseluruhan</span>
+                                        <span class="text-xl font-black text-white">65%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-800/80 rounded-full h-3 overflow-hidden shadow-inner">
+                                        <div class="bg-gradient-to-r from-blue-400 to-white h-3 rounded-full relative" style="width: 65%">
+                                            <div class="absolute inset-0 bg-white/20 animate-pulse"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="relative z-10 w-full sm:w-2/3 lg:w-2/5 shrink-0 group cursor-pointer">
+                                <div class="aspect-video rounded-2xl overflow-hidden border border-white/20 shadow-2xl relative bg-slate-800">
+                                    <img src="https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&q=80" class="w-full h-full object-cover opacity-60 group-hover:scale-105 group-hover:opacity-90 transition-all duration-500">
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <div class="w-16 h-16 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-primary-600 shadow-[0_0_30px_rgba(255,255,255,0.4)] group-hover:scale-110 transition-transform">
+                                            <i class="ph-fill ph-play text-2xl ml-1"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button @click="showToast('Video Player Sedang Memuat...')" class="w-full mt-4 py-4 bg-white text-primary-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition shadow-lg active:scale-95 flex items-center justify-center border border-slate-200">Lanjutkan Menonton <i class="ph-bold ph-arrow-right ml-2 text-lg"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Student Active Courses -->
+                        <div class="mb-8 animate-slide-up">
+                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 border-b border-slate-200 pb-4">
+                                <div>
+                                    <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Kelas Aktif Anda</h2>
+                                    <p class="text-sm text-slate-500 mt-1">Daftar kelas premium yang sudah Anda beli.</p>
+                                </div>
+                                <button @click="currentMenu = 'catalog'" class="text-xs sm:text-sm font-bold text-primary-600 hover:bg-primary-50 px-4 py-2.5 rounded-xl transition-colors">Katalog Kelas Baru <i class="ph-bold ph-arrow-right inline-block align-middle ml-1"></i></button>
+                            </div>
+                            
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div class="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-xl hover:border-primary-300 hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col group cursor-pointer">
+                                    <div class="flex flex-col sm:flex-row gap-5 mb-6">
+                                        <div class="w-full sm:w-28 aspect-video sm:aspect-square shrink-0 rounded-xl overflow-hidden bg-slate-100 border border-slate-100 relative">
+                                            <img src="https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                                            <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                <i class="ph-fill ph-play-circle text-white text-3xl"></i>
+                                            </div>
+                                        </div>
+                                        <div class="flex flex-col justify-center">
+                                            <span class="text-[9px] font-bold text-primary-600 bg-primary-50 px-2 py-0.5 rounded uppercase tracking-wider mb-2 w-max border border-primary-100">Web Development</span>
+                                            <h3 class="font-bold text-slate-900 text-base leading-snug line-clamp-2 group-hover:text-primary-600 transition-colors">Fullstack Web: Nuxt 4 & Laravel 13 API Enterprise</h3>
+                                        </div>
+                                    </div>
+                                    <div class="mt-auto pt-5 border-t border-slate-100">
+                                        <div class="flex justify-between items-center mb-2.5">
+                                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Progress Belajar</span>
+                                            <span class="text-xs font-black text-primary-600">65% Selesai</span>
+                                        </div>
+                                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner">
+                                            <div class="bg-primary-500 h-2 rounded-full transition-all duration-1000" style="width: 65%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-xl hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col group cursor-pointer relative overflow-hidden">
+                                    <div class="absolute -right-10 -top-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl"></div>
+                                    <div class="flex flex-col sm:flex-row gap-5 mb-6 relative z-10">
+                                        <div class="w-full sm:w-28 aspect-video sm:aspect-square shrink-0 rounded-xl overflow-hidden bg-slate-100 border border-slate-100">
+                                            <img src="https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                                        </div>
+                                        <div class="flex flex-col justify-center">
+                                            <span class="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded uppercase tracking-wider mb-2 w-max border border-emerald-100">Lulus</span>
+                                            <h3 class="font-bold text-slate-900 text-base leading-snug line-clamp-2">Dasar Pemrograman Web: HTML, CSS & JS</h3>
+                                        </div>
+                                    </div>
+                                    <div class="mt-auto pt-5 border-t border-slate-100 relative z-10">
+                                        <div class="flex justify-between items-center mb-2.5">
+                                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center"><i class="ph-fill ph-check-circle text-emerald-500 mr-1.5 text-lg"></i> Kelas Selesai</span>
+                                            <span class="text-xs font-black text-emerald-600">100%</span>
+                                        </div>
+                                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner mb-4">
+                                            <div class="bg-emerald-500 h-2 rounded-full transition-all duration-1000" style="width: 100%"></div>
+                                        </div>
+                                        <button @click.stop="showToast('Sertifikat berhasil diunduh ke perangkat Anda!')" class="w-full py-2.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200 hover:bg-emerald-500 hover:text-white transition shadow-sm flex items-center justify-center"><i class="ph-bold ph-certificate mr-2 text-lg"></i> Unduh Sertifikat Digital</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template v-else-if="currentMenu === 'settings'">
+                        <div class="mb-6 animate-fade-in">
+                            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Pengaturan Akun</h1>
+                            <p class="text-sm text-slate-500 mt-1">Perbarui identitas profil dan keamanan sandi Anda di sini.</p>
+                        </div>
+                        <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-6 sm:p-10 animate-slide-up max-w-3xl">
+                            <div class="flex items-center gap-6 mb-8 border-b border-slate-100 pb-8">
+                                <img src="https://i.pravatar.cc/150?img=12" class="w-20 h-20 rounded-full object-cover shadow-sm border border-slate-200 bg-slate-50">
+                                <div>
+                                    <button @click="showToast('Fitur upload gambar akan aktif setelah integrasi API Storage.', 'info')" class="px-5 py-2.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl font-bold text-xs hover:bg-slate-100 transition shadow-sm mb-2 flex items-center"><i class="ph-bold ph-upload-simple mr-1.5 text-lg"></i> Unggah Avatar</button>
+                                    <p class="text-[10px] text-slate-500">Maks. 1MB. Format JPG, PNG.</p>
+                                </div>
+                            </div>
+                            <form @submit.prevent="showToast('Profil berhasil diperbarui!')" class="space-y-6">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Nama Lengkap</label>
+                                    <input type="text" value="Andi Kusuma" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Email</label>
+                                    <input type="email" value="andi@example.com" disabled class="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold text-slate-400 outline-none cursor-not-allowed">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Password Baru</label>
+                                    <input type="password" placeholder="Masukkan sandi baru..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 outline-none focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all shadow-sm">
+                                </div>
+                                <div class="pt-6 border-t border-slate-100">
+                                    <button type="submit" class="w-full sm:w-auto px-8 py-3.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-primary-600 shadow-md transition-all active:scale-95 flex items-center justify-center"><i class="ph-bold ph-floppy-disk mr-2"></i> Simpan Perubahan</button>
+                                </div>
+                            </form>
+                        </div>
+                    </template>
+                </template>
+                <!-- End Role Templates -->
+
+            </div>
+            
+            <!-- Footer Dashboard -->
+            <footer class="mt-8 pt-6 border-t border-slate-200 text-center flex flex-col md:flex-row justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest pb-4 max-w-[1400px] mx-auto w-full">
+                <p>&copy; 2026 EduTech LMS Backend.</p>
+                <div class="flex gap-5 mt-4 md:mt-0">
+                    <a href="#" class="hover:text-primary-600 transition">Pusat Bantuan</a>
+                    <a href="#" class="hover:text-primary-600 transition">Syarat Ketentuan</a>
+                    <a href="#" class="hover:text-primary-600 transition">Privasi</a>
+                </div>
+            </footer>
+        </main>
+    </div>
+    
+    <!-- ==============================================
+         GLOBAL COMPONENTS (TOAST & MODALS)
+    =============================================== -->
+    
+    <!-- Toast Notification -->
+    <transition name="toast">
+        <div v-if="toast.show" class="fixed bottom-6 right-6 z-[110] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 font-bold text-sm min-w-[300px]"
+             :class="toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-white'">
+            <i :class="toast.type === 'success' ? 'ph-bold ph-check-circle' : 'ph-bold ph-info'" class="text-xl"></i>
+            {{ toast.message }}
+        </div>
+    </transition>
+
+    <!-- Modal Base Overlay -->
+    <transition name="modal">
+        <div v-if="isModalOpen" class="fixed inset-0 z-[100] flex items-center justify-center px-4">
+            <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="closeModal"></div>
+            
+            <!-- Modal Box -->
+            <div class="relative bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden z-10 animate-slide-up border border-slate-200">
+                <!-- Modal Header -->
+                <div class="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/80">
+                    <h3 class="text-xl font-black text-slate-900">
+                        <span v-if="modalType === 'add-user'">Tambah Pengguna Baru</span>
+                        <span v-if="modalType === 'add-course'">Buat Kelas Baru</span>
+                        <span v-if="modalType === 'withdraw'">Tarik Pendapatan</span>
+                        <span v-if="modalType === 'reply-qna'">Balas Diskusi Siswa</span>
+                    </h3>
+                    <button @click="closeModal" class="w-8 h-8 rounded-full bg-white text-slate-500 hover:bg-red-50 hover:text-red-500 border border-slate-200 flex items-center justify-center transition"><i class="ph-bold ph-x"></i></button>
+                </div>
+
+                <!-- Modal Body: Form Add User -->
+                <div v-if="modalType === 'add-user'" class="p-8">
+                    <form @submit.prevent="submitModal('Data Pengguna Baru')" class="space-y-5">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Nama Lengkap</label>
+                            <input type="text" required placeholder="John Doe" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Alamat Email</label>
+                            <input type="email" required placeholder="john@example.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Hak Akses (Role)</label>
+                            <select required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-600 outline-none focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 cursor-pointer">
+                                <option value="siswa">Siswa</option>
+                                <option value="instruktur">Instruktur</option>
+                                <option value="admin">Administrator</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="w-full mt-4 py-3.5 bg-primary-600 text-white rounded-xl font-bold text-sm hover:bg-primary-700 shadow-md active:scale-95 transition flex justify-center items-center">Simpan Data Pengguna</button>
+                    </form>
+                </div>
+
+                <!-- Modal Body: Form Add Course -->
+                <div v-if="modalType === 'add-course'" class="p-8">
+                    <form @submit.prevent="submitModal('Draft Kelas Baru')" class="space-y-5">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Judul Kelas Premium</label>
+                            <input type="text" required placeholder="Contoh: Mastering Nuxt 4..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Kategori</label>
+                                <select required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-600 outline-none focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 cursor-pointer">
+                                    <option>Web Development</option>
+                                    <option>DevOps</option>
+                                    <option>UI/UX Design</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Harga (Rp)</label>
+                                <input type="number" required placeholder="499000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Deskripsi Pendek</label>
+                            <textarea rows="3" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 resize-none"></textarea>
+                        </div>
+                        <button type="submit" class="w-full mt-4 py-3.5 bg-primary-600 text-white rounded-xl font-bold text-sm hover:bg-primary-700 shadow-md active:scale-95 transition flex justify-center items-center">Buat Draft Kelas</button>
+                    </form>
+                </div>
+
+                <!-- Modal Body: Form Withdraw (Payout) -->
+                <div v-if="modalType === 'withdraw'" class="p-8">
+                    <div class="bg-blue-50 text-blue-800 p-4 rounded-xl mb-6 text-sm border border-blue-100 flex items-start">
+                        <i class="ph-fill ph-info mr-2 text-xl mt-0.5"></i>
+                        Dana akan ditransfer ke rekening terdaftar (BCA - ****1234) dalam 1x24 jam kerja.
+                    </div>
+                    <form @submit.prevent="submitModal('Permintaan Penarikan Dana')" class="space-y-5">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Jumlah Penarikan</label>
+                            <div class="relative">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-500">Rp</span>
+                                <input type="number" max="4200000" required placeholder="0" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-12 pr-4 py-4 text-lg font-black outline-none focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 text-slate-900">
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-2 font-bold">Maks. penarikan: Rp 4.200.000</p>
+                        </div>
+                        <button type="submit" class="w-full mt-4 py-3.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-primary-600 shadow-md active:scale-95 transition flex justify-center items-center"><i class="ph-bold ph-paper-plane-tilt mr-2"></i> Ajukan Penarikan</button>
+                    </form>
+                </div>
+
+                <!-- Modal Body: Reply QnA -->
+                <div v-if="modalType === 'reply-qna'" class="p-0">
+                    <div class="p-6 bg-slate-50 border-b border-slate-100 text-sm text-slate-600 leading-relaxed italic">
+                        "Halo mas Budi, saya mengikuti instruksi di video modul 4 tapi saat menjalankan composer require muncul peringatan error 'could not find package'. Kira-kira apanya yang salah ya? PHP saya versi 8.2."
+                    </div>
+                    <div class="p-6">
+                        <form @submit.prevent="submitModal('Balasan Diskusi')" class="space-y-4">
+                            <div>
+                                <textarea rows="5" required placeholder="Ketik balasan teknis Anda di sini..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 resize-none"></textarea>
+                            </div>
+                            <div class="flex justify-end gap-3 pt-2">
+                                <button type="button" @click="closeModal" class="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-50 transition">Batal</button>
+                                <button type="submit" class="px-6 py-2.5 bg-primary-600 text-white rounded-xl font-bold text-xs hover:bg-primary-700 shadow-md transition active:scale-95"><i class="ph-bold ph-paper-plane-right mr-1.5"></i> Kirim Balasan</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </transition>
+
+</div>
+</template>
+
+<style>
+[v-cloak] { display: none; }
+        
+        /* Modern Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        
+        /* Transition for Vue */
+        .modal-enter-active, .modal-leave-active { transition: opacity 0.3s ease; }
+        .modal-enter-from, .modal-leave-to { opacity: 0; }
+        .toast-enter-active, .toast-leave-active { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(100%) scale(0.9); }
+</style>

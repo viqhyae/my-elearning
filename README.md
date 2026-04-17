@@ -56,6 +56,8 @@ docker compose down -v
 ## URL Penting
 
 - Home: http://localhost:3000/
+- Gemini Frontend (single-file dipecah ke framework): http://localhost:3000/gemini-frontend
+- Gemini Dashboard (single-file dipecah ke framework): http://localhost:3000/gemini-dashboard
 - Login: http://localhost:3000/login
 - Katalog course: http://localhost:3000/courses
 - Pembayaran: http://localhost:3000/payments
@@ -85,6 +87,12 @@ Reset seluruh data dummy (user, course, kurikulum, voucher):
 
 ```bash
 docker compose exec -T backend php artisan db:seed --force
+```
+
+Seed tambahan transaksi demo untuk dashboard Gemini:
+
+```bash
+docker compose exec -T backend php artisan db:seed --class=PaymentTransactionSeeder --force
 ```
 
 ## Fitur Aktif
@@ -140,6 +148,8 @@ Belum terhubung ke payment gateway eksternal produksi.
 - `POST /api/login`
 - `GET /api/courses`
 - `GET /api/courses/{slug}`
+- `GET /api/gemini/frontend`
+- `GET /api/gemini/dashboard`
 
 ### Authenticated (`auth:sanctum`)
 - `GET /api/me`

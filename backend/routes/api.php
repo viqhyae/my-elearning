@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Admin\VoucherManagementController;
 use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CourseController;
+use App\Http\Controllers\Api\GeminiContentController;
 use App\Http\Controllers\Api\Mentor\MentorCurriculumController;
 use App\Http\Controllers\Api\Mentor\MentorDashboardController;
 use App\Http\Controllers\Api\ProfileController;
@@ -25,6 +26,8 @@ Route::get('/health', function (): JsonResponse {
 Route::get('/courses', [CourseController::class, 'index']);
 Route::get('/courses/{slug}', [CourseController::class, 'show']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/gemini/frontend', [GeminiContentController::class, 'frontend']);
+Route::get('/gemini/dashboard', [GeminiContentController::class, 'dashboard']);
 
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/me', [AuthController::class, 'me']);
