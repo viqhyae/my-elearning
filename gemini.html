@@ -1,0 +1,2196 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduTech - Learning Management System Premium</title>
+    <!-- Vue 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
+                    colors: {
+                        primary: {
+                            50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd',
+                            400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 900: '#1e3a8a',
+                        }
+                    },
+                    animation: {
+                        'fade': 'fadeIn 0.5s ease-in-out',
+                        'fade-down': 'fadeDown 0.4s ease-out',
+                        'marquee': 'marquee 35s linear infinite',
+                        'marquee-reverse': 'marquee-reverse 35s linear infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'float-fast': 'float 4s ease-in-out infinite',
+                        'float-delayed': 'float 6s ease-in-out 2s infinite',
+                        'float-slow': 'float 8s ease-in-out 1s infinite',
+                        'blob': 'blob 7s infinite',
+                        'fly-up': 'fly-up 1.5s ease-in-out infinite forwards',
+                        'swing': 'swing 1.5s ease-in-out infinite forwards',
+                        'bounce-gentle': 'bounce-gentle 1.5s ease-in-out infinite forwards',
+                        'pulse-fast': 'pulse-fast 1s ease-in-out infinite forwards',
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        fadeDown: { '0%': { opacity: '0', transform: 'translateY(-10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+                        marquee: { '0%': { transform: 'translateX(0)' }, '100%': { transform: 'translateX(-50%)' } },
+                        'marquee-reverse': { '0%': { transform: 'translateX(-50%)' }, '100%': { transform: 'translateX(0)' } },
+                        float: { '0%, 100%': { transform: 'translateY(0px)' }, '50%': { transform: 'translateY(-15px)' } },
+                        blob: { '0%': { transform: 'translate(0px, 0px) scale(1)' }, '33%': { transform: 'translate(30px, -50px) scale(1.1)' }, '66%': { transform: 'translate(-20px, 20px) scale(0.9)' }, '100%': { transform: 'translate(0px, 0px) scale(1)' } },
+                        'fly-up': { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-12px)' } },
+                        'swing': { '0%, 100%': { transform: 'rotate(0deg)' }, '25%': { transform: 'rotate(10deg)' }, '75%': { transform: 'rotate(-10deg)' } },
+                        'bounce-gentle': { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-6px)' } },
+                        'pulse-fast': { '0%, 100%': { transform: 'scale(1)' }, '50%': { transform: 'scale(1.1)' } },
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        [v-cloak] { display: none; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; scroll-behavior: smooth; overflow-x: hidden; }
+        .parallax-wrapper { transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); will-change: transform; }
+        @keyframes slot-roll { 0% { transform: translateY(0); } 100% { transform: translateY(calc(-100% + 1em)); } }
+        .slot-wrap { display: inline-block; height: 1em; line-height: 1em; overflow: hidden; vertical-align: bottom; }
+        .slot-col { display: inline-flex; flex-direction: column; will-change: transform; }
+        .slot-col span { height: 1em; line-height: 1em; }
+        .slot-roll { animation: slot-roll cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.5); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .accordion-enter-active, .accordion-leave-active { transition: all 0.3s ease; overflow: hidden; }
+        .accordion-enter-from, .accordion-leave-to { opacity: 0; max-height: 0; transform: translateY(-10px); }
+        .accordion-enter-to, .accordion-leave-from { opacity: 1; max-height: 500px; transform: translateY(0); }
+    </style>
+</head>
+<body class="antialiased selection:bg-primary-200 selection:text-primary-900 text-slate-800">
+
+<div id="app" v-cloak class="min-h-screen flex flex-col">
+    
+    <!-- Navbar -->
+    <nav class="bg-white/90 backdrop-blur-lg border-b border-slate-200/60 sticky top-0 z-50 transition-all duration-300 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Logo -->
+                <div class="flex items-center cursor-pointer group" @click="navigate('landing')">
+                    <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-tr from-slate-900 to-slate-700 flex items-center justify-center text-white mr-3 shadow-lg group-hover:scale-105 transition-transform duration-300">
+                        <i class="ph-bold ph-code text-xl md:text-2xl"></i>
+                    </div>
+                    <span class="font-extrabold text-xl md:text-2xl tracking-tight text-slate-900">EduTech.</span>
+                </div>
+                
+                <!-- Expanded Desktop Menu -->
+                <div class="hidden lg:flex items-center space-x-1">
+                    <template v-if="!isLoggedIn">
+                        <a href="#" @click.prevent="navigate('landing')" class="px-3 xl:px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300" :class="currentPage === 'landing' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'">Beranda</a>
+                        
+                        <!-- Program Dropdown -->
+                        <div class="relative group cursor-pointer">
+                            <button class="px-3 xl:px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 text-slate-500 hover:text-slate-900 hover:bg-slate-50 flex items-center" :class="['bootcamp', 'category', 'roadmap', 'webinar', 'course-detail'].includes(currentPage) ? 'bg-slate-100 text-slate-900' : ''">
+                                Program <i class="ph-bold ph-caret-down ml-1 text-xs transition-transform group-hover:rotate-180"></i>
+                            </button>
+                            <div class="absolute left-0 top-full pt-2 w-56 invisible opacity-0 translate-y-2 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 z-50">
+                                <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-2">
+                                    <a href="#" @click.prevent="navigate('bootcamp')" class="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-primary-600 rounded-xl transition-colors">Bootcamp Premium</a>
+                                    <a href="#" @click.prevent="navigate('category')" class="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-primary-600 rounded-xl transition-colors">Katalog Kelas</a>
+                                    <a href="#" @click.prevent="navigate('roadmap')" class="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-primary-600 rounded-xl transition-colors">Roadmap Karir</a>
+                                    <a href="#" @click.prevent="navigate('webinar')" class="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-primary-600 rounded-xl transition-colors">Webinar & Event</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Perusahaan Dropdown -->
+                        <div class="relative group cursor-pointer">
+                            <button class="px-3 xl:px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 text-slate-500 hover:text-slate-900 hover:bg-slate-50 flex items-center" :class="['about', 'mentors', 'career', 'blog', 'job-detail', 'blog-detail'].includes(currentPage) ? 'bg-slate-100 text-slate-900' : ''">
+                                Perusahaan <i class="ph-bold ph-caret-down ml-1 text-xs transition-transform group-hover:rotate-180"></i>
+                            </button>
+                            <div class="absolute left-0 top-full pt-2 w-56 invisible opacity-0 translate-y-2 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 z-50">
+                                <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-2">
+                                    <a href="#" @click.prevent="navigate('about')" class="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-primary-600 rounded-xl transition-colors">Tentang Kami</a>
+                                    <a href="#" @click.prevent="navigate('mentors')" class="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-primary-600 rounded-xl transition-colors">Instruktur</a>
+                                    <a href="#" @click.prevent="navigate('career')" class="flex justify-between items-center px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-primary-600 rounded-xl transition-colors">Karir <span class="bg-primary-100 text-primary-600 text-[9px] px-2 py-0.5 rounded-full font-bold">HIRING</span></a>
+                                    <a href="#" @click.prevent="navigate('blog')" class="block px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-primary-600 rounded-xl transition-colors">Blog & Artikel</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <a href="#" @click.prevent="navigate('testimonials')" class="px-3 xl:px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300" :class="currentPage === 'testimonials' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'">Testimoni</a>
+                        <a href="#" @click.prevent="navigate('cek-sertifikat')" class="px-3 xl:px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex items-center text-primary-600 hover:bg-primary-50" :class="currentPage === 'cek-sertifikat' ? 'bg-primary-50' : ''"><i class="ph-bold ph-seal-check mr-1.5 text-lg"></i> Cek Sertifikat</a>
+                        
+                        <div class="flex items-center space-x-3 border-l-2 pl-4 ml-2 xl:pl-6 xl:ml-3 border-slate-100">
+                            <button @click="navigate('login')" class="text-sm font-bold text-slate-600 hover:text-slate-900 px-3 py-2 transition">Masuk</button>
+                            <button @click="navigate('register')" class="text-sm font-bold bg-primary-600 text-white px-5 py-2.5 rounded-xl hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/30 hover:-translate-y-0.5 duration-300">Daftar Gratis</button>
+                        </div>
+                    </template>
+                    <template v-else>
+                        <a href="#" @click.prevent="navigate('landing')" class="px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300" :class="currentPage === 'landing' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'">Beranda</a>
+                        <a href="#" @click.prevent="navigate('dashboard')" class="px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300" :class="currentPage === 'dashboard' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'">Dashboard Belajar</a>
+                        
+                        <!-- Eksplorasi Dropdown untuk User Login -->
+                        <div class="relative group cursor-pointer">
+                            <button class="px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 text-slate-500 hover:text-slate-900 hover:bg-slate-50 flex items-center" :class="['bootcamp', 'category', 'roadmap', 'course-detail'].includes(currentPage) ? 'bg-slate-100 text-slate-900' : ''">
+                                Eksplorasi <i class="ph-bold ph-caret-down ml-1 text-xs transition-transform group-hover:rotate-180"></i>
+                            </button>
+                            <div class="absolute left-0 top-full pt-2 w-48 invisible opacity-0 translate-y-2 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 z-50">
+                                <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-2">
+                                    <a href="#" @click.prevent="navigate('category')" class="block px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-primary-600 rounded-xl transition-colors">Katalog Kelas</a>
+                                    <a href="#" @click.prevent="navigate('roadmap')" class="block px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-primary-600 rounded-xl transition-colors">Roadmap Karir</a>
+                                    <a href="#" @click.prevent="navigate('bootcamp')" class="block px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-primary-600 rounded-xl transition-colors">Bootcamp</a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="ml-6 pl-6 border-l-2 border-slate-100 flex items-center relative group cursor-pointer">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold mr-3 shadow-md">BS</div>
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-bold text-slate-900">Budi Santoso</span>
+                                    <span class="text-[10px] text-slate-500">Siswa Premium</span>
+                                </div>
+                                <i class="ph-bold ph-caret-down ml-3 text-slate-400"></i>
+                            </div>
+                            <div class="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 invisible opacity-0 translate-y-2 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 z-50">
+                                <a href="#" class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl">Profil Saya</a>
+                                <a href="#" @click.prevent="navigate('cek-sertifikat')" class="block px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl">Sertifikat</a>
+                                <div class="border-t border-slate-100 my-1"></div>
+                                <button @click="logout" class="w-full text-left px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl flex items-center"><i class="ph-bold ph-sign-out mr-2"></i> Keluar</button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="flex items-center lg:hidden">
+                    <button @click="isMobileMenuOpen = !isMobileMenuOpen" class="text-slate-600 p-2 hover:bg-slate-100 rounded-xl transition">
+                        <i :class="isMobileMenuOpen ? 'ph-bold ph-x' : 'ph-bold ph-list'" class="text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Panel -->
+    <div v-if="isMobileMenuOpen" class="lg:hidden bg-white/95 backdrop-blur-2xl border-b border-slate-200 p-6 shadow-2xl z-40 absolute w-full top-20 animate-fade-down flex flex-col space-y-1 h-[calc(100vh-80px)] overflow-y-auto">
+        <template v-if="!isLoggedIn">
+            <a href="#" @click.prevent="navigate('landing')" class="block font-bold text-base py-3 px-4 rounded-xl hover:bg-slate-50 text-slate-800">Beranda</a>
+            
+            <div class="px-4 pt-4 pb-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Program Belajar</div>
+            <a href="#" @click.prevent="navigate('bootcamp')" class="block font-bold text-base py-2.5 px-4 rounded-xl hover:bg-slate-50 text-slate-600">Bootcamp Premium</a>
+            <a href="#" @click.prevent="navigate('category')" class="block font-bold text-base py-2.5 px-4 rounded-xl hover:bg-slate-50 text-slate-600">Katalog Kelas</a>
+            <a href="#" @click.prevent="navigate('roadmap')" class="block font-bold text-base py-2.5 px-4 rounded-xl hover:bg-slate-50 text-slate-600">Roadmap Karir</a>
+            <a href="#" @click.prevent="navigate('webinar')" class="block font-bold text-base py-2.5 px-4 rounded-xl hover:bg-slate-50 text-slate-600">Webinar & Event</a>
+            
+            <div class="px-4 pt-4 pb-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Perusahaan</div>
+            <a href="#" @click.prevent="navigate('about')" class="block font-bold text-base py-2.5 px-4 rounded-xl hover:bg-slate-50 text-slate-600">Tentang Kami</a>
+            <a href="#" @click.prevent="navigate('mentors')" class="block font-bold text-base py-2.5 px-4 rounded-xl hover:bg-slate-50 text-slate-600">Instruktur</a>
+            <a href="#" @click.prevent="navigate('career')" class="block font-bold text-base py-2.5 px-4 rounded-xl hover:bg-slate-50 text-slate-600 flex justify-between items-center">Karir EduTech <span class="text-[9px] bg-primary-100 text-primary-600 px-2 py-1 rounded-md">HIRING</span></a>
+            <a href="#" @click.prevent="navigate('blog')" class="block font-bold text-base py-2.5 px-4 rounded-xl hover:bg-slate-50 text-slate-600">Blog & Artikel</a>
+            
+            <div class="px-4 pt-4 pb-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">Lainnya</div>
+            <a href="#" @click.prevent="navigate('testimonials')" class="block font-bold text-base py-2.5 px-4 rounded-xl hover:bg-slate-50 text-slate-600">Testimoni Alumni</a>
+            <a href="#" @click.prevent="navigate('cek-sertifikat')" class="block font-bold text-base py-2.5 px-4 rounded-xl hover:bg-slate-50 text-primary-600">Cek Sertifikat</a>
+            <a href="#" @click.prevent="navigate('faq')" class="block font-bold text-base py-2.5 px-4 rounded-xl hover:bg-slate-50 text-slate-600">FAQ Bantuan</a>
+
+            <hr class="my-4 border-slate-200">
+            <button @click="navigate('login')" class="w-full py-4 border-2 border-slate-200 rounded-xl font-bold text-slate-700 hover:bg-slate-50 transition">Masuk Akun</button>
+            <button @click="navigate('register')" class="w-full py-4 bg-primary-600 text-white rounded-xl font-bold shadow-lg shadow-primary-500/30 transition mb-6">Daftar Gratis</button>
+        </template>
+        <template v-else>
+            <a href="#" @click.prevent="navigate('dashboard')" class="block font-bold text-base py-3 px-4 rounded-xl hover:bg-slate-50 text-slate-800">Dashboard Belajar</a>
+            <a href="#" @click.prevent="navigate('roadmap')" class="block font-bold text-base py-3 px-4 rounded-xl hover:bg-slate-50 text-slate-800">Roadmap Karir</a>
+            <a href="#" @click.prevent="navigate('category')" class="block font-bold text-base py-3 px-4 rounded-xl hover:bg-slate-50 text-slate-800">Eksplorasi Kelas</a>
+            <a href="#" @click.prevent="navigate('cek-sertifikat')" class="block font-bold text-base py-3 px-4 rounded-xl hover:bg-slate-50 text-slate-800">Sertifikat Saya</a>
+            <hr class="my-4 border-slate-200">
+            <button @click="logout" class="w-full py-4 bg-red-50 text-red-600 rounded-xl font-bold flex justify-center items-center mb-6"><i class="ph-bold ph-sign-out mr-2"></i> Keluar Akun</button>
+        </template>
+    </div>
+
+    <main class="flex-grow flex flex-col relative w-full">
+        
+        <!-- ==============================
+             VIEW: LANDING PAGE (BERANDA)
+        =============================== -->
+        <div v-if="currentPage === 'landing'" class="flex-grow flex flex-col animate-fade">
+            <!-- Hero Interactive Section -->
+            <section @mousemove="onMouseMove" @mouseleave="resetMouse" class="bg-white pt-16 pb-24 relative overflow-hidden flex flex-col justify-center min-h-[85vh]">
+                
+                <!-- Background & Mouse Parallax System -->
+                <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+                    <div class="absolute top-0 right-0 w-[600px] md:w-[800px] h-[600px] md:h-[800px] bg-primary-50/50 rounded-full blur-3xl opacity-70 mix-blend-multiply animate-blob"></div>
+                    <div class="absolute top-0 left-[-100px] w-[500px] h-[500px] bg-purple-50/50 rounded-full blur-3xl opacity-70 mix-blend-multiply animate-blob animation-delay-2000"></div>
+                    
+                    <!-- Mouse Tracked Parallax Elements (Icons Only) -->
+                    <div class="parallax-wrapper absolute inset-0" :style="{ transform: `translate(${mouseX * 60}px, ${mouseY * 40}px)` }">
+                        <div class="absolute top-[15%] left-[10%] lg:left-[15%] animate-float">
+                            <div class="w-12 h-12 md:w-14 md:h-14 bg-white border border-slate-100 rounded-2xl shadow-xl shadow-emerald-500/10 flex items-center justify-center text-emerald-500 -rotate-6">
+                                <i class="ph-bold ph-code-block text-2xl md:text-3xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="parallax-wrapper absolute inset-0" :style="{ transform: `translate(${mouseX * -40}px, ${mouseY * -50}px)` }">
+                        <div class="absolute bottom-[20%] right-[8%] lg:right-[15%] animate-float-delayed">
+                            <div class="w-14 h-14 md:w-16 md:h-16 bg-white border border-slate-100 rounded-2xl shadow-xl shadow-purple-500/10 flex items-center justify-center text-purple-500 rotate-12">
+                                <i class="ph-bold ph-database text-2xl md:text-3xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="parallax-wrapper absolute inset-0 hidden md:block" :style="{ transform: `translate(${mouseX * -70}px, ${mouseY * 30}px)` }">
+                        <div class="absolute top-[25%] right-[20%] animate-float-slow">
+                            <div class="w-12 h-12 md:w-14 md:h-14 bg-white border border-slate-100 rounded-full shadow-lg flex items-center justify-center text-blue-500 rotate-12">
+                                <i class="ph-bold ph-cloud-check text-xl md:text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="parallax-wrapper absolute inset-0 hidden md:block" :style="{ transform: `translate(${mouseX * 40}px, ${mouseY * -20}px)` }">
+                        <div class="absolute bottom-[30%] left-[18%] animate-float-fast">
+                            <div class="w-10 h-10 md:w-12 md:h-12 bg-white border border-slate-100 rounded-[1rem] shadow-lg flex items-center justify-center text-pink-500 -rotate-12">
+                                <i class="ph-bold ph-paint-brush text-xl md:text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="parallax-wrapper absolute inset-0 hidden lg:block" :style="{ transform: `translate(${mouseX * -20}px, ${mouseY * 60}px)` }">
+                        <div class="absolute top-[50%] left-[5%] animate-float-delayed">
+                            <div class="w-10 h-10 bg-white border border-slate-100 rounded-lg shadow-md flex items-center justify-center text-orange-500 rotate-45">
+                                <i class="ph-bold ph-device-mobile text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="parallax-wrapper absolute inset-0 hidden lg:block" :style="{ transform: `translate(${mouseX * 50}px, ${mouseY * -30}px)` }">
+                        <div class="absolute top-[60%] right-[10%] animate-float">
+                            <div class="w-10 h-10 bg-white border border-slate-100 rounded-full shadow-md flex items-center justify-center text-yellow-500 -rotate-12">
+                                <i class="ph-fill ph-lightning text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="max-w-4xl mx-auto px-4 text-center relative z-10">
+                    <div class="inline-flex items-center py-1.5 px-4 rounded-full bg-slate-50 text-slate-700 text-xs font-bold mb-6 md:mb-8 border border-slate-200 shadow-sm">
+                        <span class="w-2 h-2 rounded-full bg-primary-500 mr-2.5 animate-pulse"></span>
+                        Platform LMS Stack Modern #1 di Indonesia
+                    </div>
+                    
+                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 mb-6 md:mb-8 leading-[1.15] tracking-tight">
+                        Bangun Karir Impian <br class="hidden md:block">
+                        Dengan <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 via-blue-500 to-purple-600">Skill Industri Nyata</span>
+                    </h1>
+                    
+                    <p class="text-slate-500 max-w-2xl mx-auto mb-10 text-base md:text-lg leading-relaxed font-medium">
+                        Berhenti menonton tutorial tanpa arah. Kuasai ekosistem Nuxt, Laravel, Docker, dan DevOps dengan praktik langsung standar perusahaan teknologi.
+                    </p>
+                    
+                    <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+                        <button @click="navigate(isLoggedIn ? 'dashboard' : 'category')" class="w-full sm:w-auto px-8 py-3.5 md:py-4 bg-slate-900 text-white rounded-2xl font-bold text-base md:text-lg hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/30 transition-all active:scale-95">
+                            Eksplorasi Katalog
+                        </button>
+                        <button @click="navigate('roadmap')" class="w-full sm:w-auto px-8 py-3.5 md:py-4 bg-white border-2 border-slate-200 text-slate-700 rounded-2xl font-bold text-base md:text-lg hover:border-slate-300 hover:bg-slate-50 transition-all active:scale-95 flex items-center justify-center group">
+                            <i class="ph-bold ph-map-pin-line text-xl mr-2 text-primary-600 group-hover:scale-110 transition-transform"></i> Lihat Roadmap
+                        </button>
+                    </div>
+                    
+                    <!-- Stats Section (Always Animated on Landing) -->
+                    <div class="mt-16 md:mt-20 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-3xl mx-auto">
+                        <div v-for="(stat, index) in stats" :key="index" class="text-center p-2 bg-white/40 backdrop-blur-sm rounded-2xl border border-white shadow-sm">
+                            <div class="text-2xl md:text-3xl font-black text-slate-900 mb-1 flex justify-center items-end tracking-tighter">
+                                <span class="slot-wrap"><span class="slot-col slot-roll" :style="{ animationDuration: stat.duration }">
+                                    <span v-for="val in stat.values" :key="val">{{ val }}</span>
+                                </span></span>
+                                <span class="text-sm md:text-base text-slate-500 ml-1 mb-0.5">{{ stat.suffix }}</span>
+                            </div>
+                            <div class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest">{{ stat.label }}</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Trusted By (Animated Marquee Wordmarks) -->
+            <section class="py-10 bg-white border-t border-slate-100 overflow-hidden relative">
+                <div class="absolute left-0 top-0 w-24 md:w-40 h-full bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
+                <div class="absolute right-0 top-0 w-24 md:w-40 h-full bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
+                
+                <div class="max-w-7xl mx-auto px-4 text-center mb-8 relative z-20">
+                    <p class="text-[10px] md:text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">Alumni kami dipercaya oleh raksasa teknologi & startup</p>
+                </div>
+                
+                <div class="flex overflow-hidden w-full group">
+                    <div class="flex whitespace-nowrap animate-marquee items-center group-hover:[animation-play-state:paused]">
+                        <template v-for="i in 3" :key="i">
+                            <div v-for="brand in brands" :key="brand.name + i" class="mx-8 md:mx-12 grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-300 cursor-pointer flex items-center justify-center">
+                                <img :src="brand.img" :alt="brand.name" class="h-6 md:h-8 object-contain max-w-[100px] md:max-w-[130px]">
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Popular Categories -->
+            <section class="py-20 bg-slate-50 relative border-t border-slate-200/50">
+                <div class="max-w-7xl mx-auto px-4">
+                    <div class="text-center max-w-2xl mx-auto mb-12">
+                        <h2 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-3">Topik Terpopuler</h2>
+                        <p class="text-slate-500 text-base">Pilih spesialisasi yang ingin Anda kuasai dan mulai pelajari sekarang.</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                        <div v-for="(cat, idx) in categoriesPreview" :key="idx" @click="navigate('category', cat.name)" class="bg-white p-6 rounded-[1.5rem] border border-slate-200 hover:border-primary-300 hover:shadow-lg transition-all duration-300 cursor-pointer group text-center flex flex-col items-center">
+                            <!-- Specific Color and Animation purely from data -->
+                            <i :class="[cat.icon, cat.color, cat.hoverColor, cat.hoverAnim]" class="text-5xl md:text-6xl mb-5 transition-all duration-300 drop-shadow-sm"></i>
+                            <h3 class="font-bold text-slate-900 text-sm md:text-base mb-1">{{ cat.name }}</h3>
+                            <p class="text-xs text-slate-400 font-medium">{{ cat.count }} Kelas</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Why Choose Us -->
+            <section class="py-20 bg-white relative">
+                <div class="max-w-7xl mx-auto px-4">
+                    <div class="text-center max-w-3xl mx-auto mb-14">
+                        <span class="text-primary-600 font-bold text-xs uppercase tracking-widest mb-3 block">Benefit Platform</span>
+                        <h2 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-4">Mengapa Memilih EduTech?</h2>
+                        <p class="text-slate-500 text-base">Sistem belajar yang didesain agar Anda lebih cepat paham dan siap kerja.</p>
+                    </div>
+                    <div class="grid md:grid-cols-3 gap-6 md:gap-8">
+                        <div class="bg-slate-50 p-8 md:p-10 rounded-[2rem] border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                            <div class="w-14 h-14 bg-white text-blue-600 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-sm"><i class="ph-fill ph-projector-screen"></i></div>
+                            <h3 class="text-lg md:text-xl font-bold mb-2 text-slate-900">Kurikulum Proyek Nyata</h3>
+                            <p class="text-slate-500 leading-relaxed text-sm">Setiap modul diakhiri dengan pembuatan proyek nyata yang bisa langsung dijadikan portofolio untuk melamar kerja.</p>
+                        </div>
+                        <div class="bg-slate-50 p-8 md:p-10 rounded-[2rem] border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                            <div class="w-14 h-14 bg-white text-purple-600 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-sm"><i class="ph-fill ph-chats-circle"></i></div>
+                            <h3 class="text-lg md:text-xl font-bold mb-2 text-slate-900">Komunitas & Diskusi</h3>
+                            <p class="text-slate-500 leading-relaxed text-sm">Tidak perlu pusing saat stuck. Diskusikan error langsung dengan instruktur dan sesama siswa di forum eksklusif.</p>
+                        </div>
+                        <div class="bg-slate-50 p-8 md:p-10 rounded-[2rem] border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                            <div class="w-14 h-14 bg-white text-emerald-600 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-sm"><i class="ph-fill ph-infinity"></i></div>
+                            <h3 class="text-lg md:text-xl font-bold mb-2 text-slate-900">Akses Tanpa Batas</h3>
+                            <p class="text-slate-500 leading-relaxed text-sm">Bayar sekali, kelas menjadi milik Anda selamanya. Dapatkan juga pembaruan (update) materi teknis secara gratis.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Popular Courses Preview -->
+            <section class="py-20 bg-slate-900 text-white relative">
+                <div class="max-w-7xl mx-auto px-4">
+                    <div class="flex flex-col md:flex-row justify-between items-end mb-12">
+                        <div class="max-w-2xl">
+                            <h2 class="text-3xl md:text-4xl font-black tracking-tight mb-3">Kelas Terfavorit Bulan Ini</h2>
+                            <p class="text-slate-400 text-base">Mulailah dengan kelas yang paling banyak membantu alumni kami mendapatkan pekerjaan.</p>
+                        </div>
+                        <button @click="navigate('category')" class="mt-6 md:mt-0 px-6 py-3 bg-white/10 border border-white/20 rounded-xl font-bold text-white hover:bg-white/20 transition flex items-center shrink-0 text-sm">
+                            Lihat Katalog <i class="ph-bold ph-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <div v-for="course in allCourses.slice(0,3)" :key="course.id" @click="navigate('course-detail', course)" class="bg-slate-800 rounded-[1.5rem] overflow-hidden border border-slate-700 hover:border-primary-500 hover:shadow-xl hover:shadow-primary-500/20 hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col">
+                            <div class="relative aspect-video overflow-hidden bg-slate-700">
+                                <img :src="course.image" :alt="course.title" class="w-full h-full object-cover opacity-90 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700">
+                                <div class="absolute top-3 left-3 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border border-white/10">{{ course.category }}</div>
+                            </div>
+                            <div class="p-5 flex flex-col flex-grow">
+                                <div class="flex justify-between items-center text-xs font-bold text-slate-400 mb-3">
+                                    <span class="flex items-center text-yellow-400"><i class="ph-fill ph-star mr-1"></i> {{ course.rating }}</span>
+                                    <span class="flex items-center"><i class="ph-fill ph-users mr-1"></i> {{ course.students }}</span>
+                                </div>
+                                <h3 class="text-lg font-bold text-white mb-4 group-hover:text-primary-400 transition-colors line-clamp-2 leading-snug">{{ course.title }}</h3>
+                                <div class="mt-auto pt-4 border-t border-slate-700 flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <div class="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center font-bold text-[8px] mr-2 text-white">{{ course.instructorInitials }}</div>
+                                        <span class="text-xs font-semibold text-slate-300 truncate max-w-[100px]">{{ course.instructor }}</span>
+                                    </div>
+                                    <span class="font-black text-lg text-primary-400">{{ course.price }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Learning Path (Steps) -->
+            <section class="py-20 bg-slate-50 relative overflow-hidden border-b border-slate-200">
+                <div class="max-w-7xl mx-auto px-4 text-center mb-14 relative z-10">
+                    <h2 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-3">Langkah Tepat Menuju Karir</h2>
+                    <p class="text-slate-500 text-base max-w-2xl mx-auto">Kami merancang alur sukses untuk Anda dari titik nol hingga siap kerja.</p>
+                </div>
+                
+                <div class="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-6 relative z-10">
+                    <div class="text-center group bg-white p-6 rounded-2xl shadow-sm border border-slate-100" v-for="(step, idx) in steps" :key="idx">
+                        <div class="w-16 h-16 mx-auto bg-slate-50 rounded-xl flex items-center justify-center text-3xl mb-4 transition group-hover:scale-110" :class="step.color">
+                            <i :class="step.icon"></i>
+                        </div>
+                        <h4 class="text-base font-bold text-slate-900 mb-2">{{ step.title }}</h4>
+                        <p class="text-xs text-slate-500 leading-relaxed">{{ step.desc }}</p>
+                    </div>
+                </div>
+                <div class="text-center mt-10">
+                    <button @click="navigate('roadmap')" class="text-sm font-bold text-primary-600 hover:text-primary-700 hover:underline">Pelajari Roadmap Karir Detail &rarr;</button>
+                </div>
+            </section>
+
+            <!-- Final CTA Banner -->
+            <section class="py-20 bg-white relative z-10 border-b border-slate-100">
+                <div class="max-w-5xl mx-auto px-4">
+                    <div class="bg-gradient-to-br from-slate-900 to-slate-800 rounded-[2.5rem] p-10 md:p-16 text-center text-white shadow-2xl relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-[300px] h-[300px] bg-primary-500 opacity-20 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2"></div>
+                        
+                        <div class="relative z-20">
+                            <h2 class="text-3xl md:text-5xl font-black mb-4 tracking-tight leading-tight">Mulai Karir Tech Anda <span class="text-primary-400">Sekarang</span></h2>
+                            <p class="text-slate-300 text-base md:text-lg mb-8 max-w-2xl mx-auto font-medium">Berhenti menunda. Bergabung dengan talenta lainnya dan wujudkan impian menjadi developer handal.</p>
+                            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                                <button @click="navigate('register')" class="px-8 py-3.5 bg-primary-600 text-white rounded-xl font-bold text-base hover:bg-primary-700 transition shadow-xl hover:-translate-y-1 active:scale-95">Daftar Akun Gratis</button>
+                                <button @click="navigate('roadmap')" class="px-8 py-3.5 bg-white/10 border border-white/20 text-white rounded-xl font-bold text-base hover:bg-white/20 transition active:scale-95">Lihat Roadmap Karir</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ==============================
+             VIEW: ROADMAP KARIR (ANIMATED ZIG-ZAG TIMELINE)
+        =============================== -->
+        <div v-else-if="currentPage === 'roadmap'" class="flex-grow bg-slate-50 py-12 animate-fade relative overflow-hidden">
+            <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9IiNlNGE4YTMiLz48L3N2Zz4=')] opacity-50 z-0"></div>
+
+            <div class="max-w-6xl mx-auto px-4 relative z-10">
+                <div class="text-center mb-12">
+                    <div class="inline-flex items-center py-1.5 px-4 rounded-full bg-primary-100 text-primary-700 text-xs font-bold mb-4 border border-primary-200 shadow-sm">Panduan Terstruktur</div>
+                    <h1 class="text-3xl md:text-4xl font-black text-slate-900 mb-3 tracking-tight">Roadmap Karir Tech</h1>
+                    <p class="text-slate-500 text-base max-w-2xl mx-auto">Pilih peran atau *role* yang ingin Anda capai, dan ikuti langkah demi langkah materi yang harus dipelajari agar Anda siap direkrut industri.</p>
+                </div>
+
+                <!-- Role Selector -->
+                <div class="flex flex-wrap justify-center gap-3 mb-12 pb-4">
+                    <button v-for="role in roadmaps" :key="role.id" @click="activeRoadmap = role.id"
+                            class="px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 border flex items-center shrink-0"
+                            :class="activeRoadmap === role.id ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'">
+                        <i :class="role.icon + ' mr-2 text-lg'"></i> {{ role.title }}
+                    </button>
+                </div>
+
+                <!-- Active Roadmap Content -->
+                <div v-if="currentRoadmapData" class="bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/50 p-6 md:p-12 animate-fade relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-48 bg-gradient-to-b from-slate-50 to-transparent z-0 pointer-events-none"></div>
+
+                    <div class="text-center mb-16 pb-8 border-b border-slate-100 relative z-10">
+                        <div class="w-20 h-20 mx-auto bg-white border border-slate-200 text-slate-700 rounded-2xl flex items-center justify-center text-4xl mb-5 shadow-sm"><i :class="currentRoadmapData.icon"></i></div>
+                        <h2 class="text-2xl md:text-3xl font-black text-slate-900 mb-3">Jalur Belajar: {{ currentRoadmapData.title }}</h2>
+                        <p class="text-slate-500 text-sm max-w-lg mx-auto">{{ currentRoadmapData.description }}</p>
+                    </div>
+
+                    <!-- Alternating (Zig-Zag) Timeline Desktop & Left Timeline Mobile -->
+                    <div id="roadmap-timeline" class="relative pb-8 z-10 md:pt-4">
+                        <!-- Background Dashed Line (Center on MD, Left on Mobile) -->
+                        <div class="absolute left-[16px] md:left-1/2 md:-ml-[1.5px] top-0 bottom-4 w-0 border-l-[3px] border-dashed border-slate-200 z-0"></div>
+                        
+                        <!-- Foreground Animated Blue Line -->
+                        <div class="absolute left-[16px] md:left-1/2 md:-ml-[1.5px] top-0 w-0 border-l-[3px] border-dashed border-primary-500 z-10 transition-all duration-200 ease-out" 
+                             :style="{ height: `${timelineProgress}%`, maxHeight: 'calc(100% - 2rem)' }"></div>
+
+                        <div class="space-y-12 md:space-y-0 relative">
+                            <div v-for="(step, index) in currentRoadmapData.steps" :key="index" class="relative flex flex-col md:flex-row items-center w-full md:mb-16">
+                                
+                                <!-- Center Dot -->
+                                <div class="absolute left-[16px] -translate-x-1/2 md:static md:translate-x-0 w-10 h-10 rounded-full border-[4px] flex items-center justify-center z-20 transition-all duration-500 md:order-2 md:mx-auto"
+                                     :class="[(timelineProgress > ((index / currentRoadmapData.steps.length) * 100)) ? 'scale-110 shadow-md ' + getStepColorClass(index).dotActive : 'border-slate-200 bg-slate-50 scale-75']">
+                                    <span class="text-[12px] font-black transition-all duration-300" :class="(timelineProgress > ((index / currentRoadmapData.steps.length) * 100)) ? 'text-white opacity-100 scale-100' : 'opacity-0 scale-50'">{{ index + 1 }}</span>
+                                </div>
+                                
+                                <!-- Left/Right Spacer for Desktop Alternating Layout -->
+                                <div class="w-full md:w-[45%] pl-12 md:pl-0 flex" :class="index % 2 === 0 ? 'md:order-1 md:pr-10 md:justify-end' : 'md:order-3 md:pl-10 md:justify-start'">
+                                    
+                                    <!-- Step Content Card -->
+                                    <div :class="['w-full border rounded-[1.5rem] p-6 md:p-8 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden', getStepColorClass(index).bg, index % 2 === 0 ? 'md:text-right' : 'md:text-left']">
+                                        <div class="relative z-10">
+                                            <span :class="['text-[10px] font-bold uppercase tracking-wider mb-2 block', getStepColorClass(index).text]">Langkah {{ index + 1 }}</span>
+                                            <h3 class="text-xl font-bold text-slate-900 mb-3">{{ step.title }}</h3>
+                                            <p class="text-sm text-slate-600 mb-6 leading-relaxed">{{ step.desc }}</p>
+                                            
+                                            <!-- Recommended Course Link -->
+                                            <div class="flex items-center bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-white/80 group-hover:bg-white transition-colors cursor-pointer shadow-sm" :class="index % 2 === 0 ? 'md:flex-row-reverse' : 'flex-row'" @click="navigate('course-detail', getCourseByTitle(step.courseTitle))">
+                                                <div :class="['w-10 h-10 md:w-12 md:h-12 shrink-0 rounded-xl flex items-center justify-center shadow-sm bg-white', getStepColorClass(index).text, index % 2 === 0 ? 'mr-0 md:ml-4' : 'mr-4']">
+                                                    <i class="ph-fill ph-book-open text-xl md:text-2xl"></i>
+                                                </div>
+                                                <div class="flex flex-col flex-grow" :class="index % 2 === 0 ? 'text-left md:text-right' : 'text-left'">
+                                                    <span class="text-[9px] md:text-[10px] text-slate-500 font-bold uppercase tracking-wide">Kelas Rekomendasi</span>
+                                                    <span class="text-sm md:text-base font-bold text-slate-800 line-clamp-1">{{ step.courseTitle }}</span>
+                                                </div>
+                                                <div class="hidden sm:flex shrink-0 w-8 h-8 bg-white rounded-lg items-center justify-center transition shadow-sm ml-3" :class="getStepColorClass(index).btn">
+                                                    <i class="ph-bold ph-arrow-right"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Empty Spacer to force side (Desktop only) -->
+                                <div class="hidden md:block md:w-[45%]" :class="index % 2 === 0 ? 'md:order-3' : 'md:order-1'"></div>
+
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-16 text-center bg-slate-900 rounded-[2rem] p-10 shadow-xl relative overflow-hidden">
+                        <div class="absolute right-[-50px] top-[-50px] w-64 h-64 bg-primary-500 rounded-full blur-[80px] opacity-40"></div>
+                        <div class="relative z-10">
+                            <h4 class="text-2xl font-bold text-white mb-3">Siap Untuk Memulai?</h4>
+                            <p class="text-sm text-slate-400 mb-8 max-w-md mx-auto">Buat akun gratis sekarang dan akses semua roadmap, fitur diskusi, dan diskon kelas khusus member baru.</p>
+                            <button @click="navigate('register')" class="px-8 py-4 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-500 transition shadow-lg active:scale-95">Daftar & Mulai Belajar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: COURSE DETAIL & CHECKOUT (WITH ACCORDION)
+        =============================== -->
+        <div v-else-if="currentPage === 'course-detail' && activeCourse" class="flex-grow bg-slate-50 py-10 animate-fade">
+            <div class="max-w-7xl mx-auto px-4">
+                
+                <!-- Breadcrumb -->
+                <nav class="flex items-center text-xs font-semibold text-slate-500 mb-8 space-x-2">
+                    <a href="#" @click.prevent="navigate('landing')" class="hover:text-slate-900 transition">Beranda</a>
+                    <i class="ph-bold ph-caret-right"></i>
+                    <a href="#" @click.prevent="navigate('category')" class="hover:text-slate-900 transition">Katalog</a>
+                    <i class="ph-bold ph-caret-right"></i>
+                    <a href="#" @click.prevent="navigate('category', activeCourse.category)" class="hover:text-slate-900 transition">{{ activeCourse.category }}</a>
+                </nav>
+
+                <div class="grid lg:grid-cols-3 gap-8 items-start">
+                    
+                    <!-- Left Content (Course Info & Syllabus) -->
+                    <div class="lg:col-span-2 space-y-8">
+                        <!-- Video Cover -->
+                        <div class="rounded-[2rem] overflow-hidden aspect-video bg-slate-800 relative group cursor-pointer shadow-sm border border-slate-200" @click="isDemoModalOpen = true">
+                            <img :src="activeCourse.image" class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700">
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="w-16 h-16 bg-white/30 backdrop-blur rounded-full flex items-center justify-center text-white border border-white/50 group-hover:scale-110 transition-transform shadow-lg">
+                                    <i class="ph-fill ph-play text-2xl ml-1"></i>
+                                </div>
+                            </div>
+                            <div class="absolute top-4 left-4 flex gap-2">
+                                <span class="bg-white/90 backdrop-blur text-slate-900 px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm uppercase tracking-wider">{{ activeCourse.category }}</span>
+                                <span class="bg-slate-900/80 backdrop-blur text-white px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm uppercase tracking-wider">{{ activeCourse.level || 'Semua Level' }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Course Title & Meta -->
+                        <div>
+                            <h1 class="text-3xl md:text-4xl font-black text-slate-900 mb-4 leading-tight">{{ activeCourse.title }}</h1>
+                            <div class="flex flex-wrap items-center text-sm font-bold text-slate-600 gap-4 md:gap-6 mb-6">
+                                <span class="flex items-center text-yellow-500"><i class="ph-fill ph-star mr-1.5 text-lg"></i> {{ activeCourse.rating }} / 5.0</span>
+                                <span class="flex items-center"><i class="ph-fill ph-users mr-1.5 text-slate-400 text-lg"></i> {{ activeCourse.students }} Terdaftar</span>
+                                <span class="flex items-center"><i class="ph-fill ph-translate mr-1.5 text-slate-400 text-lg"></i> Bahasa Indonesia</span>
+                                <span class="flex items-center"><i class="ph-fill ph-certificate mr-1.5 text-slate-400 text-lg"></i> Sertifikat Tersedia</span>
+                            </div>
+                            <p class="text-slate-600 leading-relaxed text-base">Pelajari konsep inti hingga implementasi tingkat lanjut (*advanced*) dari teknologi ini. Disusun berdasarkan *best practice* industri, kelas ini akan membimbing Anda membangun proyek nyata yang bisa ditambahkan ke portofolio Anda.</p>
+                        </div>
+
+                        <!-- Instructor Profile -->
+                        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex items-center">
+                            <div class="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center font-bold text-lg mr-4 text-slate-600 border border-slate-200">{{ activeCourse.instructorInitials }}</div>
+                            <div>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Instruktur Kelas</p>
+                                <h4 class="font-bold text-slate-900 text-lg">{{ activeCourse.instructor }}</h4>
+                                <p class="text-xs text-slate-500 font-medium">Senior Software Engineer & Tech Lead</p>
+                            </div>
+                        </div>
+
+                        <!-- Animated Accordion Syllabus -->
+                        <div class="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-sm">
+                            <h3 class="text-xl font-bold text-slate-900 mb-6">Materi Pembelajaran</h3>
+                            <div class="space-y-3">
+                                <div v-for="(module, index) in courseSyllabus" :key="index" class="border border-slate-200 rounded-xl overflow-hidden transition-all duration-300">
+                                    <button @click="module.open = !module.open" class="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors focus:outline-none group">
+                                        <div class="flex items-center text-left">
+                                            <div class="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500 font-bold mr-4 shrink-0 group-hover:bg-primary-50 group-hover:text-primary-600 transition">{{ index + 1 }}</div>
+                                            <div>
+                                                <h4 class="font-bold text-slate-900 text-sm mb-0.5 group-hover:text-primary-600 transition-colors">{{ module.title }}</h4>
+                                                <p class="text-xs text-slate-500">{{ module.duration }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="w-8 h-8 shrink-0 rounded-full flex items-center justify-center transition-transform duration-300 text-slate-400" :class="module.open ? 'rotate-180 bg-primary-50 text-primary-600' : ''">
+                                            <i class="ph-bold ph-caret-down"></i>
+                                        </div>
+                                    </button>
+                                    
+                                    <transition name="accordion">
+                                        <div v-show="module.open" class="px-4 pb-4">
+                                            <div class="pl-[3.25rem] pr-2 pt-2 border-t border-slate-100 mt-2">
+                                                <ul class="space-y-3 text-sm text-slate-600 font-medium">
+                                                    <li v-for="(item, i) in module.items" :key="i" class="flex items-center group/item cursor-pointer">
+                                                        <i class="ph-fill ph-play-circle text-slate-300 mr-2.5 text-lg group-hover/item:text-primary-500 transition-colors"></i> 
+                                                        <span class="group-hover/item:text-slate-900 transition-colors">{{ item }}</span>
+                                                        <span v-if="i===0 && index===0" class="ml-auto text-[9px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-bold uppercase">Preview</span>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </transition>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Sidebar (Sticky Checkout) -->
+                    <div class="lg:col-span-1 lg:sticky lg:top-28">
+                        <div class="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-xl shadow-slate-200/50">
+                            <!-- Price Logic (Fake discount) -->
+                            <div class="mb-6">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-slate-400 font-bold text-sm line-through" v-if="activeCourse.price !== 'Gratis'">Rp {{ parseInt(activeCourse.price.replace(/\D/g,'')) * 2 + '.000' }}</span>
+                                    <span v-if="activeCourse.price !== 'Gratis'" class="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Diskon 50%</span>
+                                </div>
+                                <h2 class="text-4xl font-black text-primary-600">{{ activeCourse.price }}</h2>
+                            </div>
+                            
+                            <button @click="isLoggedIn ? navigate('dashboard') : navigate('login')" class="w-full py-4 bg-slate-900 text-white rounded-xl font-bold text-base hover:bg-primary-600 transition shadow-lg shadow-slate-900/20 active:scale-95 mb-4">
+                                {{ activeCourse.price === 'Gratis' ? 'Daftar Kelas Gratis' : 'Beli Akses Seumur Hidup' }}
+                            </button>
+                            
+                            <p class="text-xs text-center text-slate-500 font-medium mb-6">Pembayaran aman terenkripsi & Garansi 7 hari uang kembali.</p>
+                            
+                            <div class="space-y-3 mb-8">
+                                <div class="flex items-center text-sm text-slate-600 font-medium"><i class="ph-bold ph-check text-emerald-500 mr-3 text-lg"></i> Akses kelas selamanya</div>
+                                <div class="flex items-center text-sm text-slate-600 font-medium"><i class="ph-bold ph-check text-emerald-500 mr-3 text-lg"></i> Update materi gratis</div>
+                                <div class="flex items-center text-sm text-slate-600 font-medium"><i class="ph-bold ph-check text-emerald-500 mr-3 text-lg"></i> Grup diskusi komunitas</div>
+                                <div class="flex items-center text-sm text-slate-600 font-medium"><i class="ph-bold ph-check text-emerald-500 mr-3 text-lg"></i> Sertifikat kelulusan digital</div>
+                            </div>
+
+                            <hr class="border-slate-100 mb-6">
+                            
+                            <h4 class="font-bold text-xs text-slate-400 uppercase tracking-wider mb-4 text-center">Metode Pembayaran</h4>
+                            <div class="flex flex-wrap justify-center gap-2">
+                                <span class="px-3 py-1.5 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 bg-slate-50">BCA VA</span>
+                                <span class="px-3 py-1.5 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 bg-slate-50">Mandiri</span>
+                                <span class="px-3 py-1.5 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 bg-slate-50">GoPay</span>
+                                <span class="px-3 py-1.5 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 bg-slate-50">OVO</span>
+                                <span class="px-3 py-1.5 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 bg-slate-50">ShopeePay</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: KATALOG KELAS (SIDEBAR STICKY)
+        =============================== -->
+        <div v-else-if="currentPage === 'category'" class="flex-grow bg-slate-50 py-12 animate-fade">
+            <div class="max-w-7xl mx-auto px-4">
+                
+                <div class="mb-8 text-center md:text-left">
+                    <h1 class="text-3xl md:text-4xl font-black text-slate-900 mb-2 tracking-tight">Katalog Pembelajaran</h1>
+                    <p class="text-slate-500 text-base">Temukan kelas yang tepat untuk meningkatkan *skill* Anda hari ini.</p>
+                </div>
+
+                <div class="flex flex-col lg:flex-row gap-6 md:gap-8 items-start">
+                    <!-- LEFT SIDEBAR FILTER -->
+                    <aside class="w-full lg:w-72 shrink-0 sticky top-28 h-max z-10">
+                        <div class="bg-white p-5 rounded-[1.5rem] border border-slate-200 shadow-sm mb-5">
+                            <div class="relative">
+                                <i class="ph-bold ph-magnifying-glass absolute left-3.5 top-3.5 text-slate-400"></i>
+                                <input v-model="searchQuery" type="text" placeholder="Cari modul..." class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all text-sm font-medium">
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-[1.5rem] border border-slate-200 shadow-sm mb-5">
+                            <h3 class="font-bold text-slate-900 mb-4 uppercase text-[11px] tracking-wider">Kategori Topik</h3>
+                            <div class="space-y-3">
+                                <label class="flex items-center space-x-3 cursor-pointer group">
+                                    <input type="radio" name="category" value="Semua Kategori" v-model="activeCategoryFilter" class="w-4 h-4 text-primary-600 border-slate-300 focus:ring-primary-500 cursor-pointer">
+                                    <span class="text-sm font-medium text-slate-600 group-hover:text-slate-900 transition">Semua Kategori</span>
+                                </label>
+                                <label v-for="cat in categories" :key="cat" class="flex items-center space-x-3 cursor-pointer group">
+                                    <input type="radio" name="category" :value="cat" v-model="activeCategoryFilter" class="w-4 h-4 text-primary-600 border-slate-300 focus:ring-primary-500 cursor-pointer">
+                                    <span class="text-sm font-medium text-slate-600 group-hover:text-slate-900 transition">{{ cat }}</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="bg-gradient-to-br from-slate-900 to-slate-800 p-6 rounded-[1.5rem] shadow-lg text-white relative overflow-hidden mb-5">
+                            <div class="absolute top-[-30px] right-[-30px] w-24 h-24 bg-primary-500 rounded-full blur-2xl opacity-50"></div>
+                            <div class="relative z-10">
+                                <div class="inline-block px-2 py-1 bg-white/20 rounded mb-3 text-[10px] font-bold uppercase tracking-wider border border-white/20">Akses Penuh</div>
+                                <h3 class="font-bold text-lg mb-1 leading-tight">Langganan Pro</h3>
+                                <p class="text-xs text-slate-300 mb-4 leading-relaxed">Akses semua 100+ kelas premium & forum diskusi eksklusif.</p>
+                                <button @click="navigate('bootcamp')" class="w-full bg-primary-600 text-white py-2.5 rounded-xl font-bold text-sm hover:bg-primary-500 transition shadow-md">Lihat Paket</button>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <div class="flex-1 w-full">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm gap-4">
+                            <span class="text-sm font-semibold text-slate-500">Menampilkan <span class="text-slate-900 font-bold">{{ filteredCourses.length }}</span> hasil kelas</span>
+                            <div class="flex items-center space-x-2 text-sm font-semibold text-slate-600">
+                                <span>Urutkan:</span>
+                                <select class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all cursor-pointer font-medium">
+                                    <option>Paling Relevan</option>
+                                    <option>Terbaru Dirilis</option>
+                                    <option>Rating Tertinggi</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6">
+                            <div v-for="course in filteredCourses" :key="course.id" class="bg-white rounded-[1.5rem] overflow-hidden border border-slate-200 hover:border-primary-300 hover:shadow-xl hover:shadow-primary-500/10 hover:-translate-y-1 transition-all duration-300 flex flex-col h-full group cursor-pointer" @click="navigate('course-detail', course)">
+                                <div class="relative aspect-video overflow-hidden bg-slate-100">
+                                    <img :src="course.image" :alt="course.title" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                                    <div class="absolute top-3 left-3 bg-white/95 backdrop-blur text-slate-800 px-2.5 py-1 rounded-md text-[9px] font-bold shadow-sm uppercase tracking-wider">{{ course.category }}</div>
+                                    <div class="absolute top-3 right-3 bg-slate-900/90 backdrop-blur text-white px-2 py-1 rounded-md text-[9px] font-bold uppercase">{{ course.level || 'Semua Level' }}</div>
+                                </div>
+                                <div class="p-5 flex flex-col flex-grow">
+                                    <div class="flex justify-between items-center text-xs font-semibold text-slate-500 mb-2">
+                                        <span class="flex items-center text-yellow-500"><i class="ph-fill ph-star mr-1"></i> {{ course.rating }}</span>
+                                        <span class="flex items-center"><i class="ph-fill ph-users mr-1"></i> {{ course.students }}</span>
+                                    </div>
+                                    <h3 class="text-base font-bold text-slate-900 mb-3 group-hover:text-primary-600 transition-colors leading-snug line-clamp-2">{{ course.title }}</h3>
+                                    
+                                    <div class="mt-auto pt-4 border-t border-slate-100 flex flex-col gap-3">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center">
+                                                <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center font-bold text-[9px] mr-2 text-slate-600 border border-slate-200">{{ course.instructorInitials }}</div>
+                                                <span class="text-[11px] font-semibold text-slate-600 truncate max-w-[80px]">{{ course.instructor }}</span>
+                                            </div>
+                                            <span class="font-black text-base text-slate-900">{{ course.price }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="filteredCourses.length === 0" class="text-center py-20 bg-white rounded-[2rem] border border-slate-200 border-dashed mt-4 shadow-sm">
+                            <i class="ph-duotone ph-magnifying-glass text-4xl text-slate-300 mb-3 inline-block"></i>
+                            <h3 class="text-lg font-bold text-slate-700">Kelas tidak ditemukan</h3>
+                            <p class="text-slate-500 text-sm mt-1">Sesuaikan kata kunci atau bersihkan filter di sebelah kiri.</p>
+                            <button @click="activeCategoryFilter = 'Semua Kategori'; activeLevelFilter = 'Semua Level'; searchQuery=''" class="mt-4 px-5 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition">Reset Filter</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: KARIR / HIRING (DENGAN DETAIL JOB)
+        =============================== -->
+        <div v-else-if="currentPage === 'career'" class="flex-grow bg-white py-16 animate-fade">
+            <div class="max-w-5xl mx-auto px-4">
+                <div class="bg-slate-900 rounded-[3rem] p-12 md:p-16 text-center text-white mb-16 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-64 h-64 bg-primary-600 rounded-full blur-[80px] opacity-30"></div>
+                    <div class="relative z-10">
+                        <span class="bg-white/10 text-white px-3 py-1 rounded-full text-xs font-bold border border-white/20 mb-6 inline-block">We are Hiring!</span>
+                        <h1 class="text-4xl md:text-5xl font-black mb-4 tracking-tight">Bergabung Bersama Kami</h1>
+                        <p class="text-slate-300 text-base max-w-xl mx-auto">Jadilah bagian dari misi kami mencetak 1 Juta talenta digital Indonesia. Kami mencari individu yang penuh semangat dan inovatif.</p>
+                    </div>
+                </div>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-6">Posisi Terbuka ({{ jobs.length }})</h3>
+                <div class="space-y-4">
+                    <div v-for="(job, idx) in jobs" :key="idx" class="flex flex-col md:flex-row md:items-center justify-between p-6 border border-slate-200 rounded-2xl hover:border-primary-400 hover:shadow-md transition-all group">
+                        <div class="mb-4 md:mb-0">
+                            <h4 class="text-lg font-bold text-slate-900 mb-2 group-hover:text-primary-600 transition">{{ job.title }}</h4>
+                            <div class="flex items-center text-sm text-slate-500 space-x-4">
+                                <span class="flex items-center"><i class="ph-bold ph-briefcase mr-1.5 text-primary-500"></i> {{ job.type }}</span>
+                                <span class="flex items-center"><i class="ph-bold ph-map-pin mr-1.5 text-primary-500"></i> {{ job.location }}</span>
+                            </div>
+                        </div>
+                        <button @click="navigate('job-detail', job)" class="w-full md:w-auto px-6 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm text-slate-700 group-hover:bg-slate-900 group-hover:text-white transition">Lihat Detail & Apply</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: JOB DETAIL (APPLY)
+        =============================== -->
+        <div v-else-if="currentPage === 'job-detail' && activeJob" class="flex-grow bg-slate-50 py-12 animate-fade">
+            <div class="max-w-5xl mx-auto px-4">
+                <button @click="navigate('career')" class="mb-6 text-slate-500 hover:text-primary-600 flex items-center font-bold text-sm transition">
+                    <i class="ph-bold ph-arrow-left mr-2"></i> Kembali ke Lowongan
+                </button>
+
+                <div class="grid md:grid-cols-3 gap-8">
+                    <!-- Left: JD Content -->
+                    <div class="md:col-span-2 bg-white rounded-[2rem] p-8 md:p-10 border border-slate-200 shadow-sm">
+                        <div class="mb-8 pb-8 border-b border-slate-100">
+                            <h1 class="text-3xl font-black text-slate-900 mb-4">{{ activeJob.title }}</h1>
+                            <div class="flex flex-wrap items-center text-sm font-semibold text-slate-600 gap-4">
+                                <span class="bg-primary-50 text-primary-700 px-3 py-1 rounded-md border border-primary-100">{{ activeJob.type }}</span>
+                                <span class="bg-slate-100 text-slate-700 px-3 py-1 rounded-md border border-slate-200">{{ activeJob.location }}</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6 text-slate-600 leading-relaxed text-sm md:text-base">
+                            <h3 class="text-xl font-bold text-slate-900">Deskripsi Pekerjaan</h3>
+                            <p>{{ activeJob.description }}</p>
+                            
+                            <h3 class="text-xl font-bold text-slate-900 pt-4">Persyaratan (*Requirements*)</h3>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li v-for="(req, i) in activeJob.requirements" :key="i">{{ req }}</li>
+                            </ul>
+
+                            <h3 class="text-xl font-bold text-slate-900 pt-4">Keuntungan (*Benefits*)</h3>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li>Gaji kompetitif sesuai standar industri.</li>
+                                <li>BPJS Kesehatan & Ketenagakerjaan.</li>
+                                <li>Fasilitas WFA (*Work From Anywhere*).</li>
+                                <li>Budaya kerja yang kolaboratif dan minim birokrasi.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Right: Apply Box -->
+                    <div class="md:col-span-1">
+                        <div class="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-xl shadow-slate-200/50 sticky top-28 text-center">
+                            <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl text-slate-400">
+                                <i class="ph-duotone ph-paper-plane-tilt"></i>
+                            </div>
+                            <h3 class="font-bold text-lg text-slate-900 mb-2">Tertarik dengan posisi ini?</h3>
+                            <p class="text-sm text-slate-500 mb-6">Siapkan CV terbaru Anda dan portofolio pendukung (jika ada).</p>
+                            <button @click="isDemoModalOpen = true" class="w-full py-3.5 bg-primary-600 text-white rounded-xl font-bold shadow-md hover:bg-primary-700 transition-colors active:scale-95 mb-4">
+                                Lamar Pekerjaan Ini
+                            </button>
+                            <p class="text-xs text-slate-400 font-medium">Batas akhir: 30 Hari lagi</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: BLOG & ARTIKEL 
+        =============================== -->
+        <div v-else-if="currentPage === 'blog'" class="flex-grow bg-slate-50 py-16 animate-fade">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="text-center mb-16">
+                    <h1 class="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">Blog & Artikel</h1>
+                    <p class="text-slate-500 text-base max-w-2xl mx-auto">Tutorial coding, tren industri, dan tips pengembangan karir khusus untuk *developer*.</p>
+                </div>
+
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div v-for="(post, idx) in blogPosts" :key="idx" @click="navigate('blog-detail', post)" class="bg-white border border-slate-200 rounded-[1.5rem] overflow-hidden hover:shadow-xl transition-all group cursor-pointer flex flex-col">
+                        <div class="aspect-video bg-slate-100 overflow-hidden relative">
+                            <img :src="post.img" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        </div>
+                        <div class="p-6 flex flex-col flex-grow">
+                            <div class="flex items-center justify-between text-xs font-bold text-slate-400 mb-3">
+                                <span class="text-primary-600 uppercase tracking-wider bg-primary-50 px-2 py-1 rounded">{{ post.category }}</span>
+                                <span>{{ post.readTime }} read</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-900 mb-3 group-hover:text-primary-600 line-clamp-2 leading-snug">{{ post.title }}</h3>
+                            <p class="text-sm text-slate-500 line-clamp-2 mt-auto">{{ post.excerpt }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: BLOG DETAIL (BACA ARTIKEL + BACA JUGA)
+        =============================== -->
+        <div v-else-if="currentPage === 'blog-detail' && activePost" class="flex-grow bg-white py-12 animate-fade">
+            <div class="max-w-3xl mx-auto px-4">
+                <button @click="navigate('blog')" class="mb-6 text-slate-500 hover:text-primary-600 flex items-center font-bold text-sm transition">
+                    <i class="ph-bold ph-arrow-left mr-2"></i> Kembali ke Artikel
+                </button>
+
+                <span class="text-primary-600 font-bold text-xs uppercase tracking-wider bg-primary-50 px-3 py-1.5 rounded-lg mb-4 inline-block">{{ activePost.category }}</span>
+                <h1 class="text-3xl md:text-5xl font-black text-slate-900 mb-6 leading-tight tracking-tight">{{ activePost.title }}</h1>
+                
+                <div class="flex items-center text-sm text-slate-500 font-medium mb-10 pb-8 border-b border-slate-100">
+                    <img src="https://i.pravatar.cc/150?img=11" class="w-10 h-10 rounded-full mr-3">
+                    <div>
+                        <p class="text-slate-900 font-bold">Tim Redaksi EduTech</p>
+                        <p>Diterbitkan pada: 2 Hari yang lalu • {{ activePost.readTime }} read</p>
+                    </div>
+                </div>
+
+                <div class="rounded-[2rem] overflow-hidden aspect-video bg-slate-100 mb-10 shadow-sm border border-slate-200">
+                    <img :src="activePost.img" class="w-full h-full object-cover">
+                </div>
+
+                <!-- Blog Content -->
+                <div class="prose prose-slate max-w-none text-slate-700 leading-relaxed text-base md:text-lg">
+                    <p class="mb-6"><span class="font-bold text-xl text-slate-900">EduTech -</span> {{ activePost.excerpt }} Artikel ini akan membahas langkah-langkah praktis dan konsep inti yang perlu Anda ketahui.</p>
+                    
+                    <h3 class="text-2xl font-bold text-slate-900 mt-8 mb-4">Kenapa Anda Harus Belajar Ini?</h3>
+                    <p class="mb-6">Di era teknologi modern, skalabilitas dan efisiensi adalah kunci. Teknologi yang kita bahas tidak hanya meningkatkan produktivitas tim, tetapi juga menjamin performa aplikasi di tahap *production* yang sangat krusial bagi kepuasan pengguna akhir (User Experience).</p>
+
+                    <h3 class="text-2xl font-bold text-slate-900 mt-8 mb-4">Implementasi Dasar</h3>
+                    <p class="mb-6">Langkah pertama adalah memastikan *environment* Anda sudah siap. Instalasi paket (*package*) dan konfigurasi dasar sangat penting sebelum Anda menulis baris kode pertama. Pastikan Anda merujuk pada dokumentasi resmi untuk menghindari *breaking changes* versi terbaru.</p>
+                    
+                    <div class="bg-slate-800 text-slate-200 p-6 rounded-2xl font-mono text-sm mb-6 border border-slate-700">
+                        <span class="text-slate-500">// Contoh *pseudocode* instalasi</span><br>
+                        <span class="text-emerald-400">npm</span> install @paket-teknologi-terbaru<br>
+                        <span class="text-blue-400">import</span> { FiturUtama } <span class="text-blue-400">from</span> 'paket-teknologi';<br><br>
+                        <span class="text-slate-500">// Inisialisasi</span><br>
+                        FiturUtama.init();
+                    </div>
+
+                    <h3 class="text-2xl font-bold text-slate-900 mt-8 mb-4">Kesimpulan</h3>
+                    <p class="mb-6">Mengadopsi pola pikir dan teknologi ini akan memisahkan seorang *coder* amatir dari *Software Engineer* profesional. Jangan ragu untuk bereksperimen dan mencoba di *project* lokal Anda sendiri.</p>
+                </div>
+
+                <!-- Related Posts (Baca Juga Artikel Lainnya) -->
+                <div class="mt-20 pt-10 border-t border-slate-200">
+                    <h3 class="text-2xl font-black text-slate-900 mb-8">Baca Juga Artikel Lainnya</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div v-for="(post, idx) in blogPosts.filter(p => p.title !== activePost.title).slice(0, 2)" :key="idx" @click="navigate('blog-detail', post)" class="bg-white border border-slate-200 rounded-[1.5rem] overflow-hidden hover:shadow-xl transition-all group cursor-pointer flex flex-col">
+                            <div class="aspect-video bg-slate-100 overflow-hidden relative">
+                                <img :src="post.img" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            </div>
+                            <div class="p-5 flex flex-col flex-grow">
+                                <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 mb-2">
+                                    <span class="text-primary-600 uppercase tracking-wider bg-primary-50 px-2 py-1 rounded">{{ post.category }}</span>
+                                    <span>{{ post.readTime }} read</span>
+                                </div>
+                                <h3 class="text-base font-bold text-slate-900 mb-2 group-hover:text-primary-600 line-clamp-2 leading-snug">{{ post.title }}</h3>
+                                <p class="text-xs text-slate-500 line-clamp-2 mt-auto">{{ post.excerpt }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: TENTANG KAMI 
+        =============================== -->
+        <div v-else-if="currentPage === 'about'" class="flex-grow bg-white py-16 animate-fade">
+            <div class="max-w-6xl mx-auto px-4">
+                <div class="text-center mb-16 max-w-3xl mx-auto">
+                    <span class="inline-flex items-center py-1.5 px-4 rounded-full bg-primary-50 text-primary-700 text-xs font-bold mb-4 border border-primary-100">Our Story</span>
+                    <h1 class="text-4xl md:text-5xl font-black text-slate-900 mb-6 tracking-tight">Misi Kami Mencetak <span class="text-primary-600">1 Juta</span> Talenta Digital Indonesia</h1>
+                    <p class="text-slate-500 text-lg leading-relaxed">EduTech didirikan pada tahun 2024 untuk memecahkan masalah kesenjangan antara pendidikan akademis konvensional dengan kebutuhan keahlian (*skill*) yang nyata di industri teknologi saat ini.</p>
+                </div>
+                
+                <div class="rounded-[3rem] overflow-hidden aspect-video md:aspect-[21/9] mb-20 shadow-2xl relative">
+                    <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2000" alt="Tim EduTech" class="w-full h-full object-cover">
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-8 text-center mb-20 border-y border-slate-100 py-12">
+                    <div>
+                        <h3 class="text-5xl font-black text-slate-900 mb-2">10K+</h3>
+                        <p class="text-slate-500 font-bold">Siswa Lulusan</p>
+                    </div>
+                    <div>
+                        <h3 class="text-5xl font-black text-slate-900 mb-2">50+</h3>
+                        <p class="text-slate-500 font-bold">Hiring Partner</p>
+                    </div>
+                    <div>
+                        <h3 class="text-5xl font-black text-slate-900 mb-2">150+</h3>
+                        <p class="text-slate-500 font-bold">Kelas Premium</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: CEK SERTIFIKAT 
+        =============================== -->
+        <div v-else-if="currentPage === 'cek-sertifikat'" class="flex-grow bg-slate-50 py-20 animate-fade flex items-center justify-center px-4">
+            <div class="max-w-2xl w-full bg-white rounded-[3rem] shadow-xl border border-slate-200 p-8 md:p-14 text-center">
+                <div class="w-20 h-20 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-primary-100">
+                    <i class="ph-duotone ph-seal-check text-5xl text-primary-500"></i>
+                </div>
+                <h1 class="text-3xl font-black text-slate-900 mb-4">Verifikasi Sertifikat</h1>
+                <p class="text-slate-500 mb-10 text-sm max-w-md mx-auto">Pastikan keaslian sertifikat lulusan EduTech dengan memasukkan Credential ID yang tertera pada dokumen.</p>
+                
+                <div class="relative max-w-md mx-auto mb-4">
+                    <input type="text" placeholder="Contoh: EDT-2026-XYZ123" class="w-full pl-5 pr-32 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 font-medium text-slate-700 placeholder-slate-400">
+                    <button class="absolute right-2 top-2 bottom-2 px-5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-primary-600 transition">Verifikasi</button>
+                </div>
+                <p class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-6">Sertifikat terenkripsi secara digital</p>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: FAQ / PUSAT BANTUAN
+        =============================== -->
+        <div v-else-if="currentPage === 'faq'" class="flex-grow bg-slate-50 py-16 animate-fade">
+            <div class="max-w-3xl mx-auto px-4">
+                <div class="text-center mb-10">
+                    <div class="w-14 h-14 bg-white rounded-2xl mx-auto flex items-center justify-center text-2xl text-primary-600 mb-4 border border-slate-200 shadow-sm"><i class="ph-fill ph-question"></i></div>
+                    <h1 class="text-3xl md:text-4xl font-black text-slate-900 mb-3 tracking-tight">Pusat Bantuan (FAQ)</h1>
+                    <p class="text-slate-500 text-base">Jawaban cepat untuk pertanyaan yang sering ditanyakan mengenai kelas dan sistem belajar kami.</p>
+                </div>
+
+                <div class="space-y-3">
+                    <div v-for="(item, index) in faqs" :key="index" class="bg-white border border-slate-200 rounded-2xl overflow-hidden transition-all duration-300" :class="item.open ? 'shadow-md ring-1 ring-primary-500' : 'hover:border-slate-300'">
+                        <button @click="item.open = !item.open" class="w-full px-5 py-4 flex items-center justify-between font-bold text-slate-900 text-left focus:outline-none">
+                            <span class="text-sm md:text-base pr-4">{{ item.q }}</span>
+                            <div class="w-7 h-7 shrink-0 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center transition-transform duration-300" :class="item.open ? 'rotate-180 bg-primary-50 text-primary-600 border-primary-100' : ''">
+                                <i class="ph-bold ph-caret-down text-sm"></i>
+                            </div>
+                        </button>
+                        <transition name="accordion">
+                            <div v-show="item.open" class="px-5 pb-5 pt-0 text-slate-600 text-sm leading-relaxed">
+                                <hr class="border-slate-100 mb-3">
+                                {{ item.a }}
+                            </div>
+                        </transition>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: LOGIN / REGISTER (SPLIT SCREEN)
+        =============================== -->
+        <div v-else-if="currentPage === 'register' || currentPage === 'login'" class="flex-grow flex animate-fade bg-slate-50 items-center justify-center p-4">
+            <div class="max-w-5xl w-full bg-white rounded-[2rem] shadow-xl border border-slate-200 flex overflow-hidden min-h-[500px] my-10">
+                <div class="hidden md:flex md:w-1/2 relative bg-slate-900 flex-col justify-between p-12 overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-primary-900/90 to-slate-900 z-10"></div>
+                    <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1000')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
+                    
+                    <div class="relative z-20 flex items-center">
+                        <div class="w-10 h-10 rounded-xl bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center text-white mr-3">
+                            <i class="ph-bold ph-code text-xl"></i>
+                        </div>
+                        <span class="font-extrabold text-2xl text-white">EduTech.</span>
+                    </div>
+                    
+                    <div class="relative z-20 mt-12">
+                        <h2 class="text-3xl lg:text-4xl font-black text-white leading-tight mb-4 tracking-tight">Percepat Pertumbuhan Karir IT Anda.</h2>
+                        <p class="text-slate-300 text-sm lg:text-base leading-relaxed">Akses ke 100+ modul, framework modern, dan studi kasus industri dalam satu platform.</p>
+                        
+                        <div class="mt-8 bg-white/10 backdrop-blur border border-white/20 p-5 rounded-2xl">
+                            <div class="flex text-yellow-400 mb-2 text-xs"><i class="ph-fill ph-star" v-for="n in 5" :key="n"></i></div>
+                            <p class="text-white text-xs italic mb-3">"Investasi terbaik untuk karir saya. Langsung paham alur Nuxt dan Laravel berkat materinya yang to-the-point."</p>
+                            <div class="flex items-center text-white">
+                                <div class="w-6 h-6 rounded-full bg-primary-500 text-[8px] font-bold flex items-center justify-center mr-2 border border-white/30">BS</div>
+                                <div><p class="text-[10px] font-bold">Budi Santoso</p></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-full md:w-1/2 p-8 lg:p-12 flex flex-col justify-center bg-white">
+                    <div class="mb-8 text-center md:text-left">
+                        <h2 class="text-2xl lg:text-3xl font-black text-slate-900 mb-2">{{ currentPage === 'register' ? 'Buat Akun Gratis' : 'Selamat Datang' }}</h2>
+                        <p class="text-slate-500 text-sm">{{ currentPage === 'register' ? 'Akses seluruh fitur pembelajaran.' : 'Silakan masukkan kredensial Anda.' }}</p>
+                    </div>
+
+                    <div class="flex gap-3 mb-6">
+                        <button class="flex-1 py-2.5 border border-slate-200 rounded-xl flex items-center justify-center font-bold text-xs text-slate-700 hover:bg-slate-50 transition shadow-sm">
+                            <img src="https://cdn.simpleicons.org/google" class="h-4 w-4 mr-2 grayscale opacity-70"> Google
+                        </button>
+                        <button class="flex-1 py-2.5 border border-slate-200 rounded-xl flex items-center justify-center font-bold text-xs text-slate-700 hover:bg-slate-50 transition shadow-sm">
+                            <i class="ph-fill ph-github-logo text-lg mr-2"></i> Github
+                        </button>
+                    </div>
+
+                    <div class="flex items-center mb-6">
+                        <div class="flex-grow border-t border-slate-200"></div>
+                        <span class="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email</span>
+                        <div class="flex-grow border-t border-slate-200"></div>
+                    </div>
+                    
+                    <form @submit.prevent="isLoggedIn = true; navigate('dashboard')" class="space-y-4">
+                        <div v-if="currentPage === 'register'">
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">Nama Lengkap</label>
+                            <input type="text" placeholder="John Doe" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-primary-500/50 transition-all text-sm font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">Email</label>
+                            <input type="email" placeholder="nama@email.com" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-primary-500/50 transition-all text-sm font-medium">
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-1.5 ml-1">
+                                <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider">Password</label>
+                                <a v-if="currentPage === 'login'" href="#" class="text-[10px] font-bold text-primary-600 hover:underline">Lupa?</a>
+                            </div>
+                            <input type="password" placeholder="••••••••" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-primary-500/50 transition-all text-sm font-medium">
+                        </div>
+                        
+                        <button type="submit" class="w-full py-3.5 mt-2 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-primary-600 shadow-lg shadow-slate-900/10 hover:shadow-primary-600/20 transition-all active:scale-95">
+                            {{ currentPage === 'register' ? 'Daftar Sekarang' : 'Masuk Dashboard' }}
+                        </button>
+                    </form>
+                    
+                    <div class="mt-6 text-center text-slate-500 text-xs font-medium">
+                        {{ currentPage === 'register' ? 'Sudah memiliki akun?' : 'Belum memiliki akun?' }}
+                        <button @click="navigate(currentPage === 'register' ? 'login' : 'register')" class="text-primary-600 font-bold hover:underline ml-1">
+                            {{ currentPage === 'register' ? 'Masuk' : 'Daftar' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             DASHBOARD (USER)
+        =============================== -->
+        <div v-else-if="currentPage === 'dashboard'" class="flex-grow bg-slate-50 py-10 px-4 animate-fade">
+            <div class="max-w-6xl mx-auto">
+                <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                    <div class="flex items-center">
+                        <div class="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center font-bold text-lg mr-4 text-slate-700 shadow-sm">BS</div>
+                        <div>
+                            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Halo, Budi Santoso! 👋</h1>
+                            <p class="text-slate-500 text-sm">Dashboard pembelajaran Anda.</p>
+                        </div>
+                    </div>
+                    <button @click="navigate('category')" class="px-5 py-2.5 bg-primary-600 text-white rounded-xl font-bold text-sm hover:bg-primary-700 transition shadow-sm w-max">Tambah Kelas Baru</button>
+                </div>
+                
+                <div class="grid md:grid-cols-3 gap-6">
+                    <!-- Main Area -->
+                    <div class="md:col-span-2 space-y-6">
+                        <!-- Alert -->
+                        <div class="bg-blue-50 border border-blue-200 p-4 rounded-[1.5rem] flex items-start">
+                            <i class="ph-fill ph-info text-blue-500 text-xl mr-3 mt-0.5"></i>
+                            <div>
+                                <h4 class="font-bold text-blue-900 text-sm">Mulai Kelas Pertamamu</h4>
+                                <p class="text-xs text-blue-700 mt-1 leading-relaxed">Anda belum mendaftar di kelas manapun. Yuk temukan kelas yang cocok untuk pengembangan karirmu.</p>
+                                <button @click="navigate('category')" class="mt-2 text-xs font-bold text-blue-800 hover:underline">Lihat Katalog &rarr;</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Empty State Class -->
+                        <div class="bg-white p-8 rounded-[1.5rem] border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center min-h-[300px]">
+                             <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
+                                 <i class="ph-duotone ph-student text-4xl text-slate-300"></i>
+                             </div>
+                             <h3 class="font-bold text-slate-900 text-base">Kelas Aktif Kosong</h3>
+                             <p class="text-sm text-slate-500 mt-1 max-w-xs">Progress belajar Anda akan otomatis muncul di sini setelah mendaftar.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div class="bg-white p-5 rounded-[1.5rem] border border-slate-200 shadow-sm">
+                            <h3 class="font-bold text-slate-900 mb-4 uppercase text-[10px] tracking-wider">Statistik Belajar</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div class="w-9 h-9 bg-white rounded-lg flex items-center justify-center text-emerald-500 shadow-sm mr-3"><i class="ph-bold ph-check-circle text-lg"></i></div>
+                                    <div class="flex-1"><p class="text-[10px] text-slate-500 font-bold uppercase tracking-wide">Modul Selesai</p><p class="font-black text-slate-900 text-base">0</p></div>
+                                </div>
+                                <div class="flex items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div class="w-9 h-9 bg-white rounded-lg flex items-center justify-center text-purple-500 shadow-sm mr-3"><i class="ph-bold ph-certificate text-lg"></i></div>
+                                    <div class="flex-1"><p class="text-[10px] text-slate-500 font-bold uppercase tracking-wide">Sertifikat</p><p class="font-black text-slate-900 text-base">0</p></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: TESTIMONIALS (MASONRY GRID + MARQUEE)
+        =============================== -->
+        <div v-else-if="currentPage === 'testimonials'" class="flex-grow bg-slate-50 py-16 animate-fade relative overflow-hidden">
+            <!-- Background Decoration -->
+            <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-primary-100 rounded-full blur-[100px] opacity-60 z-0"></div>
+            <div class="absolute bottom-0 left-[-100px] w-[400px] h-[400px] bg-purple-100 rounded-full blur-[100px] opacity-60 z-0"></div>
+
+            <div class="relative z-10">
+                <div class="max-w-3xl mx-auto px-4 text-center mb-16">
+                    <span class="inline-flex items-center py-1.5 px-4 rounded-full bg-white text-slate-700 text-xs font-bold mb-4 border border-slate-200 shadow-sm"><i class="ph-fill ph-star mr-1 text-yellow-400"></i> Ulasan Nyata Siswa</span>
+                    <h1 class="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">Kisah Sukses <span class="text-primary-600">Alumni</span></h1>
+                    <p class="text-slate-500 text-base">Ribuan karir telah ditransformasi. Berikut adalah apa yang mereka katakan setelah menerapkan materi dari EduTech.</p>
+                </div>
+
+                <div class="flex flex-col space-y-6 mb-24 overflow-hidden [mask-image:_linear-gradient(to_right,transparent_0,_black_10%,_black_90%,transparent_100%)]">
+                    <div class="flex whitespace-nowrap animate-marquee hover:[animation-play-state:paused] w-max">
+                        <div class="flex space-x-6 px-3" v-for="i in 2" :key="'row1-'+i">
+                            <div v-for="(testi, idx) in testimonialsRow1" :key="idx" class="w-[320px] md:w-[400px] shrink-0 relative p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-100 bg-white whitespace-normal group hover:shadow-md transition-all">
+                                <i class="ph-fill ph-quotes text-5xl text-slate-100 absolute top-4 right-4 z-0 group-hover:text-primary-100 transition-colors"></i>
+                                <div class="relative z-10">
+                                    <div class="flex text-yellow-400 text-sm mb-4"><i class="ph-fill ph-star" v-for="n in 5" :key="n"></i></div>
+                                    <p class="text-slate-600 font-medium leading-relaxed mb-6 text-sm">"{{ testi.quote }}"</p>
+                                    <div class="flex items-center pt-5 mt-auto border-t border-slate-50">
+                                        <img :src="testi.avatar" :alt="testi.name" class="w-10 h-10 rounded-full object-cover border border-slate-200">
+                                        <div class="ml-3">
+                                            <h4 class="font-bold text-slate-900 text-sm">{{ testi.name }}</h4>
+                                            <p class="text-[10px] font-bold text-slate-500 uppercase">{{ testi.role }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex whitespace-nowrap animate-marquee-reverse hover:[animation-play-state:paused] w-max">
+                        <div class="flex space-x-6 px-3" v-for="i in 2" :key="'row2-'+i">
+                            <div v-for="(testi, idx) in testimonialsRow2" :key="idx" class="w-[320px] md:w-[400px] shrink-0 relative p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-100 bg-white whitespace-normal group hover:shadow-md transition-all">
+                                <i class="ph-fill ph-quotes text-5xl text-slate-100 absolute top-4 right-4 z-0 group-hover:text-primary-100 transition-colors"></i>
+                                <div class="relative z-10">
+                                    <div class="flex text-yellow-400 text-sm mb-4"><i class="ph-fill ph-star" v-for="n in 5" :key="n"></i></div>
+                                    <p class="text-slate-600 font-medium leading-relaxed mb-6 text-sm">"{{ testi.quote }}"</p>
+                                    <div class="flex items-center pt-5 mt-auto border-t border-slate-50">
+                                        <img :src="testi.avatar" :alt="testi.name" class="w-10 h-10 rounded-full object-cover border border-slate-200">
+                                        <div class="ml-3">
+                                            <h4 class="font-bold text-slate-900 text-sm">{{ testi.name }}</h4>
+                                            <p class="text-[10px] font-bold text-slate-500 uppercase">{{ testi.role }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="max-w-5xl mx-auto px-4 mb-24">
+                    <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-8 md:p-12">
+                        <div class="text-center mb-10">
+                            <h2 class="text-2xl md:text-3xl font-black text-slate-900 mb-2">Dampak Nyata Pembelajaran</h2>
+                            <p class="text-slate-500 text-sm">Bukan sekadar angka, ini adalah bukti kualitas kurikulum kami di industri.</p>
+                        </div>
+                        <div id="impact-stats-section" class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center divide-y md:divide-y-0 md:divide-x divide-slate-100">
+                            <div v-for="(stat, idx) in impactStats" :key="idx" class="pt-6 md:pt-0 flex flex-col items-center">
+                                <h3 class="text-4xl font-black text-primary-600 mb-2 flex justify-center items-end tracking-tighter">
+                                    <span v-if="stat.prefix" class="mr-1.5">{{ stat.prefix }}</span>
+                                    <span class="slot-wrap"><span class="slot-col" :class="{'slot-roll': impactStatsVisible}" :style="{ animationDuration: stat.duration }">
+                                        <span v-for="val in stat.values" :key="val">{{ val }}</span>
+                                    </span></span>
+                                    <span v-if="stat.suffix" :class="stat.suffixClass">{{ stat.suffix }}</span>
+                                </h3>
+                                <p class="text-slate-900 font-bold text-sm mb-1">{{ stat.title }}</p>
+                                <p class="text-slate-500 text-xs px-4" v-html="stat.desc"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="max-w-4xl mx-auto px-4 text-center pb-12">
+                    <h2 class="text-3xl font-black text-slate-900 mb-4">Siap Menulis Kisah Sukses Anda?</h2>
+                    <p class="text-slate-500 mb-8">Bergabung dengan platform belajar teknologi terbaik dan bangun masa depanmu.</p>
+                    <button @click="navigate('register')" class="px-8 py-3.5 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition shadow-md active:scale-95">Mulai Perjalananmu Sekarang</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: MENTORS / INSTRUKTUR 
+        =============================== -->
+        <div v-else-if="currentPage === 'mentors'" class="flex-grow bg-slate-50 py-16 animate-fade">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="text-center max-w-2xl mx-auto mb-16">
+                    <span class="inline-flex items-center py-1.5 px-4 rounded-full bg-white text-slate-600 text-xs font-bold mb-4 border border-slate-200 shadow-sm">Pengajar Berpengalaman</span>
+                    <h1 class="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">Belajar Langsung Dari <span class="text-primary-600">Pakar</span></h1>
+                    <p class="text-slate-500 text-base">Mentor kami adalah *senior engineer* & spesialis aktif dari berbagai startup Unicorn dan perusahaan teknologi global.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12 mt-10">
+                    <div v-for="(mentor, idx) in mentorsList" :key="idx" class="bg-white rounded-[2rem] p-1 pt-12 relative border border-slate-200 hover:shadow-2xl hover:shadow-primary-500/10 hover:border-primary-200 hover:-translate-y-2 transition-all duration-300 group mt-6">
+                        <div class="absolute -top-10 left-1/2 -translate-x-1/2 w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden group-hover:scale-110 transition-transform duration-500 z-10 bg-slate-100">
+                            <img :src="mentor.image" :alt="mentor.name" class="w-full h-full object-cover">
+                        </div>
+                        <div class="absolute top-0 left-0 w-full h-16 rounded-t-[2rem] bg-gradient-to-r opacity-20 z-0" :class="idx % 2 === 0 ? 'from-primary-400 to-blue-300' : 'from-purple-400 to-pink-300'"></div>
+                        
+                        <div class="px-5 pb-6 pt-6 text-center relative z-10">
+                            <h3 class="font-black text-slate-900 text-lg mb-1">{{ mentor.name }}</h3>
+                            <p class="text-primary-600 text-[10px] font-bold uppercase tracking-wider mb-4">{{ mentor.role }}</p>
+                            
+                            <div class="flex items-center justify-center bg-slate-50 py-2 px-3 rounded-xl border border-slate-100 w-max mx-auto mb-4">
+                                <span class="text-[10px] font-semibold text-slate-500 mr-1.5">Active at</span>
+                                <span class="font-bold text-slate-800 text-xs">{{ mentor.company }}</span>
+                            </div>
+
+                            <!-- Social Links -->
+                            <div class="flex justify-center space-x-2 border-t border-slate-100 pt-4 mt-2">
+                                <a href="#" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary-600 hover:border-primary-200 hover:bg-primary-50 transition-colors"><i class="ph-fill ph-linkedin-logo"></i></a>
+                                <a href="#" class="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:border-slate-300 hover:bg-slate-50 transition-colors"><i class="ph-fill ph-github-logo"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: BOOTCAMP PREMIUM 
+        =============================== -->
+        <div v-else-if="currentPage === 'bootcamp'" class="flex-grow bg-white py-16 animate-fade">
+            <div class="max-w-6xl mx-auto px-4 mb-20 text-center">
+                <div class="inline-flex items-center py-1.5 px-4 rounded-full bg-red-100 text-red-700 text-xs font-bold mb-6 border border-red-200"><i class="ph-fill ph-fire mr-1.5"></i> Batch 12 Dibuka</div>
+                <h1 class="text-4xl md:text-6xl font-black text-slate-900 mb-6 tracking-tight">Intensive <span class="text-primary-600">Bootcamp</span></h1>
+                <p class="text-slate-500 text-lg max-w-2xl mx-auto mb-10">Program intensif 12 minggu dengan kurikulum terarah, 1-on-1 mentoring, penyaluran kerja (*hiring partner*), dan garansi uang kembali.</p>
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
+                    <button @click="navigate('login')" class="w-full sm:w-auto px-8 py-3.5 bg-slate-900 text-white rounded-xl font-bold shadow-lg hover:bg-primary-600 transition-colors">Daftar Seleksi Batch 12</button>
+                    <button class="w-full sm:w-auto px-8 py-3.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition">Download Silabus</button>
+                </div>
+            </div>
+            
+            <div class="bg-slate-50 py-20 border-y border-slate-100">
+                <div class="max-w-6xl mx-auto px-4 grid md:grid-cols-3 gap-8">
+                    <div class="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
+                        <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mb-6"><i class="ph-bold ph-chalkboard-teacher"></i></div>
+                        <h3 class="text-xl font-bold mb-2">Live Mentoring 1-on-1</h3>
+                        <p class="text-slate-500 text-sm leading-relaxed">Sesi privat mingguan dengan Senior Engineer untuk review kode dan diskusi kendala belajar.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
+                        <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl mb-6"><i class="ph-bold ph-briefcase"></i></div>
+                        <h3 class="text-xl font-bold mb-2">Hiring Partner</h3>
+                        <p class="text-slate-500 text-sm leading-relaxed">Kami bekerja sama dengan 50+ perusahaan teknologi untuk memprioritaskan CV lulusan bootcamp.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
+                        <div class="w-14 h-14 bg-yellow-50 text-yellow-600 rounded-2xl flex items-center justify-center text-2xl mb-6"><i class="ph-bold ph-medal"></i></div>
+                        <h3 class="text-xl font-bold mb-2">Job Guarantee</h3>
+                        <p class="text-slate-500 text-sm leading-relaxed">Tidak mendapat tawaran pekerjaan dalam 6 bulan setelah lulus? Kami kembalikan uang Anda 100%.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="max-w-5xl mx-auto px-4 py-24">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl md:text-4xl font-black text-slate-900 mb-4">Pilihan Paket Belajar</h2>
+                    <p class="text-slate-500">Pilih skema yang sesuai dengan komitmen investasi karir Anda.</p>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <!-- Reguler Package -->
+                    <div class="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm hover:border-primary-300 transition-colors">
+                        <h3 class="text-2xl font-bold text-slate-900 mb-2">Bootcamp Reguler</h3>
+                        <p class="text-sm text-slate-500 mb-6">Cocok untuk yang ingin fokus ke ilmu tanpa kontrak penyaluran kerja.</p>
+                        <div class="mb-6">
+                            <span class="text-4xl font-black text-slate-900">Rp 4.500.000</span>
+                        </div>
+                        <button @click="navigate('login')" class="w-full py-3.5 bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-bold hover:bg-slate-100 transition mb-8">Pilih Reguler</button>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center text-sm text-slate-600"><i class="ph-bold ph-check text-emerald-500 mr-3"></i> 12 Minggu Live Session</div>
+                            <div class="flex items-center text-sm text-slate-600"><i class="ph-bold ph-check text-emerald-500 mr-3"></i> Final Project Review</div>
+                            <div class="flex items-center text-sm text-slate-600"><i class="ph-bold ph-check text-emerald-500 mr-3"></i> Sertifikat Kelulusan</div>
+                            <div class="flex items-center text-sm text-slate-400 opacity-50"><i class="ph-bold ph-x text-slate-300 mr-3"></i> Prioritas Penyaluran Kerja</div>
+                            <div class="flex items-center text-sm text-slate-400 opacity-50"><i class="ph-bold ph-x text-slate-300 mr-3"></i> Refund Job Guarantee</div>
+                        </div>
+                    </div>
+
+                    <!-- Job Guarantee Package -->
+                    <div class="bg-slate-900 rounded-[2rem] border border-slate-800 p-8 shadow-2xl relative overflow-hidden transform md:-translate-y-4">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-primary-600 rounded-full blur-[60px] opacity-50"></div>
+                        <div class="relative z-10">
+                            <div class="inline-block bg-primary-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-4">Paling Direkomendasikan</div>
+                            <h3 class="text-2xl font-bold text-white mb-2">Job Guarantee</h3>
+                            <p class="text-sm text-slate-400 mb-6">Jaminan langsung disalurkan kerja ke Hiring Partner kami.</p>
+                            <div class="mb-6">
+                                <span class="text-4xl font-black text-white">Rp 8.000.000</span>
+                            </div>
+                            <button @click="navigate('login')" class="w-full py-3.5 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-500 transition shadow-lg active:scale-95 mb-8">Pilih Job Guarantee</button>
+                            
+                            <div class="space-y-4">
+                                <div class="flex items-center text-sm text-slate-300"><i class="ph-bold ph-check text-primary-400 mr-3"></i> 12 Minggu Live Session</div>
+                                <div class="flex items-center text-sm text-slate-300"><i class="ph-bold ph-check text-primary-400 mr-3"></i> Final Project + Review Portofolio</div>
+                                <div class="flex items-center text-sm text-slate-300"><i class="ph-bold ph-check text-primary-400 mr-3"></i> Review CV & Simulasi Interview</div>
+                                <div class="flex items-center text-sm text-white font-bold"><i class="ph-bold ph-check text-primary-400 mr-3"></i> Penyaluran ke 50+ Hiring Partner</div>
+                                <div class="flex items-center text-sm text-white font-bold"><i class="ph-bold ph-check text-primary-400 mr-3"></i> Uang Kembali 100% Jika Gagal</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: WEBINAR & EVENT 
+        =============================== -->
+        <div v-else-if="currentPage === 'webinar'" class="flex-grow bg-slate-50 py-16 animate-fade">
+            <div class="max-w-6xl mx-auto px-4">
+                <div class="text-center mb-16">
+                    <h1 class="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">Webinar & Event</h1>
+                    <p class="text-slate-500 text-base max-w-2xl mx-auto">Tingkatkan wawasan industri Anda dengan mengikuti sesi *live class* bersama expert secara gratis maupun berbayar.</p>
+                </div>
+
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div v-for="(event, idx) in webinars" :key="idx" class="bg-white border border-slate-200 rounded-[1.5rem] overflow-hidden hover:shadow-xl hover:border-primary-300 transition-all group flex flex-col">
+                        <div class="aspect-video bg-slate-800 relative p-6 flex flex-col justify-end overflow-hidden">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10"></div>
+                            <img :src="event.img" class="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-700">
+                            <div class="relative z-20">
+                                <span class="bg-primary-500 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded mb-2 inline-block">{{ event.type }}</span>
+                                <h3 class="text-white font-bold text-lg leading-snug line-clamp-2">{{ event.title }}</h3>
+                            </div>
+                        </div>
+                        <div class="p-6 flex flex-col flex-grow">
+                            <div class="flex items-center text-sm text-slate-500 mb-4 font-medium">
+                                <i class="ph-bold ph-calendar-blank mr-2 text-primary-500"></i> {{ event.date }}
+                            </div>
+                            <div class="flex items-center mt-auto border-t border-slate-100 pt-4">
+                                <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 mr-3">{{ event.speakerInitials }}</div>
+                                <span class="text-sm font-bold text-slate-800">{{ event.speaker }}</span>
+                            </div>
+                            <button @click="navigate('login')" class="w-full mt-5 py-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-900 hover:text-white transition-colors">Daftar Event</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: KARIR / HIRING 
+        =============================== -->
+        <div v-else-if="currentPage === 'career'" class="flex-grow bg-white py-16 animate-fade">
+            <div class="max-w-5xl mx-auto px-4">
+                <div class="bg-slate-900 rounded-[3rem] p-12 md:p-16 text-center text-white mb-16 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-64 h-64 bg-primary-600 rounded-full blur-[80px] opacity-30"></div>
+                    <div class="relative z-10">
+                        <span class="bg-white/10 text-white px-3 py-1 rounded-full text-xs font-bold border border-white/20 mb-6 inline-block">We are Hiring!</span>
+                        <h1 class="text-4xl md:text-5xl font-black mb-4 tracking-tight">Bergabung Bersama Kami</h1>
+                        <p class="text-slate-300 text-base max-w-xl mx-auto">Jadilah bagian dari misi kami mencetak 1 Juta talenta digital Indonesia. Kami mencari individu yang penuh semangat dan inovatif.</p>
+                    </div>
+                </div>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-6">Posisi Terbuka ({{ jobs.length }})</h3>
+                <div class="space-y-4">
+                    <div v-for="(job, idx) in jobs" :key="idx" class="flex flex-col md:flex-row md:items-center justify-between p-6 border border-slate-200 rounded-2xl hover:border-primary-400 hover:shadow-md transition-all group">
+                        <div class="mb-4 md:mb-0">
+                            <h4 class="text-lg font-bold text-slate-900 mb-2 group-hover:text-primary-600 transition">{{ job.title }}</h4>
+                            <div class="flex items-center text-sm text-slate-500 space-x-4">
+                                <span class="flex items-center"><i class="ph-bold ph-briefcase mr-1.5 text-primary-500"></i> {{ job.type }}</span>
+                                <span class="flex items-center"><i class="ph-bold ph-map-pin mr-1.5 text-primary-500"></i> {{ job.location }}</span>
+                            </div>
+                        </div>
+                        <button @click="navigate('job-detail', job)" class="w-full md:w-auto px-6 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm text-slate-700 group-hover:bg-slate-900 group-hover:text-white transition">Lihat Detail & Apply</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: JOB DETAIL (APPLY)
+        =============================== -->
+        <div v-else-if="currentPage === 'job-detail' && activeJob" class="flex-grow bg-slate-50 py-12 animate-fade">
+            <div class="max-w-5xl mx-auto px-4">
+                <button @click="navigate('career')" class="mb-6 text-slate-500 hover:text-primary-600 flex items-center font-bold text-sm transition">
+                    <i class="ph-bold ph-arrow-left mr-2"></i> Kembali ke Lowongan
+                </button>
+
+                <div class="grid md:grid-cols-3 gap-8">
+                    <!-- Left: JD Content -->
+                    <div class="md:col-span-2 bg-white rounded-[2rem] p-8 md:p-10 border border-slate-200 shadow-sm">
+                        <div class="mb-8 pb-8 border-b border-slate-100">
+                            <h1 class="text-3xl font-black text-slate-900 mb-4">{{ activeJob.title }}</h1>
+                            <div class="flex flex-wrap items-center text-sm font-semibold text-slate-600 gap-4">
+                                <span class="bg-primary-50 text-primary-700 px-3 py-1 rounded-md border border-primary-100">{{ activeJob.type }}</span>
+                                <span class="bg-slate-100 text-slate-700 px-3 py-1 rounded-md border border-slate-200">{{ activeJob.location }}</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6 text-slate-600 leading-relaxed text-sm md:text-base">
+                            <h3 class="text-xl font-bold text-slate-900">Deskripsi Pekerjaan</h3>
+                            <p>{{ activeJob.description }}</p>
+                            
+                            <h3 class="text-xl font-bold text-slate-900 pt-4">Persyaratan (*Requirements*)</h3>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li v-for="(req, i) in activeJob.requirements" :key="i">{{ req }}</li>
+                            </ul>
+
+                            <h3 class="text-xl font-bold text-slate-900 pt-4">Keuntungan (*Benefits*)</h3>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li>Gaji kompetitif sesuai standar industri.</li>
+                                <li>BPJS Kesehatan & Ketenagakerjaan.</li>
+                                <li>Fasilitas WFA (*Work From Anywhere*).</li>
+                                <li>Budaya kerja yang kolaboratif dan minim birokrasi.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Right: Apply Box -->
+                    <div class="md:col-span-1">
+                        <div class="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-xl shadow-slate-200/50 sticky top-28 text-center">
+                            <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl text-slate-400">
+                                <i class="ph-duotone ph-paper-plane-tilt"></i>
+                            </div>
+                            <h3 class="font-bold text-lg text-slate-900 mb-2">Tertarik dengan posisi ini?</h3>
+                            <p class="text-sm text-slate-500 mb-6">Siapkan CV terbaru Anda dan portofolio pendukung (jika ada).</p>
+                            <button @click="isDemoModalOpen = true" class="w-full py-3.5 bg-primary-600 text-white rounded-xl font-bold shadow-md hover:bg-primary-700 transition-colors active:scale-95 mb-4">
+                                Lamar Pekerjaan Ini
+                            </button>
+                            <p class="text-xs text-slate-400 font-medium">Batas akhir: 30 Hari lagi</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: BLOG & ARTIKEL 
+        =============================== -->
+        <div v-else-if="currentPage === 'blog'" class="flex-grow bg-slate-50 py-16 animate-fade">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="text-center mb-16">
+                    <h1 class="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">Blog & Artikel</h1>
+                    <p class="text-slate-500 text-base max-w-2xl mx-auto">Tutorial coding, tren industri, dan tips pengembangan karir khusus untuk *developer*.</p>
+                </div>
+
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div v-for="(post, idx) in blogPosts" :key="idx" @click="navigate('blog-detail', post)" class="bg-white border border-slate-200 rounded-[1.5rem] overflow-hidden hover:shadow-xl transition-all group cursor-pointer flex flex-col">
+                        <div class="aspect-video bg-slate-100 overflow-hidden relative">
+                            <img :src="post.img" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        </div>
+                        <div class="p-6 flex flex-col flex-grow">
+                            <div class="flex items-center justify-between text-xs font-bold text-slate-400 mb-3">
+                                <span class="text-primary-600 uppercase tracking-wider bg-primary-50 px-2 py-1 rounded">{{ post.category }}</span>
+                                <span>{{ post.readTime }} read</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-900 mb-3 group-hover:text-primary-600 line-clamp-2 leading-snug">{{ post.title }}</h3>
+                            <p class="text-sm text-slate-500 line-clamp-2 mt-auto">{{ post.excerpt }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: BLOG DETAIL (BACA ARTIKEL)
+        =============================== -->
+        <div v-else-if="currentPage === 'blog-detail' && activePost" class="flex-grow bg-white py-12 animate-fade">
+            <div class="max-w-3xl mx-auto px-4">
+                <button @click="navigate('blog')" class="mb-6 text-slate-500 hover:text-primary-600 flex items-center font-bold text-sm transition">
+                    <i class="ph-bold ph-arrow-left mr-2"></i> Kembali ke Artikel
+                </button>
+
+                <span class="text-primary-600 font-bold text-xs uppercase tracking-wider bg-primary-50 px-3 py-1.5 rounded-lg mb-4 inline-block">{{ activePost.category }}</span>
+                <h1 class="text-3xl md:text-5xl font-black text-slate-900 mb-6 leading-tight tracking-tight">{{ activePost.title }}</h1>
+                
+                <div class="flex items-center text-sm text-slate-500 font-medium mb-10 pb-8 border-b border-slate-100">
+                    <img src="https://i.pravatar.cc/150?img=11" class="w-10 h-10 rounded-full mr-3">
+                    <div>
+                        <p class="text-slate-900 font-bold">Tim Redaksi EduTech</p>
+                        <p>Diterbitkan pada: 2 Hari yang lalu • {{ activePost.readTime }} read</p>
+                    </div>
+                </div>
+
+                <div class="rounded-[2rem] overflow-hidden aspect-video bg-slate-100 mb-10 shadow-sm border border-slate-200">
+                    <img :src="activePost.img" class="w-full h-full object-cover">
+                </div>
+
+                <!-- Blog Content -->
+                <div class="prose prose-slate max-w-none text-slate-700 leading-relaxed text-base md:text-lg">
+                    <p class="mb-6"><span class="font-bold text-xl text-slate-900">EduTech -</span> {{ activePost.excerpt }} Artikel ini akan membahas langkah-langkah praktis dan konsep inti yang perlu Anda ketahui.</p>
+                    
+                    <h3 class="text-2xl font-bold text-slate-900 mt-8 mb-4">Kenapa Anda Harus Belajar Ini?</h3>
+                    <p class="mb-6">Di era teknologi modern, skalabilitas dan efisiensi adalah kunci. Teknologi yang kita bahas tidak hanya meningkatkan produktivitas tim, tetapi juga menjamin performa aplikasi di tahap *production* yang sangat krusial bagi kepuasan pengguna akhir (User Experience).</p>
+
+                    <h3 class="text-2xl font-bold text-slate-900 mt-8 mb-4">Implementasi Dasar</h3>
+                    <p class="mb-6">Langkah pertama adalah memastikan *environment* Anda sudah siap. Instalasi paket (*package*) dan konfigurasi dasar sangat penting sebelum Anda menulis baris kode pertama. Pastikan Anda merujuk pada dokumentasi resmi untuk menghindari *breaking changes* versi terbaru.</p>
+                    
+                    <div class="bg-slate-800 text-slate-200 p-6 rounded-2xl font-mono text-sm mb-6 border border-slate-700">
+                        <span class="text-slate-500">// Contoh pseudocode instalasi</span><br>
+                        <span class="text-emerald-400">npm</span> install @paket-teknologi-terbaru<br>
+                        <span class="text-blue-400">import</span> { FiturUtama } <span class="text-blue-400">from</span> 'paket-teknologi';<br><br>
+                        <span class="text-slate-500">// Inisialisasi</span><br>
+                        FiturUtama.init();
+                    </div>
+
+                    <h3 class="text-2xl font-bold text-slate-900 mt-8 mb-4">Kesimpulan</h3>
+                    <p class="mb-6">Mengadopsi pola pikir dan teknologi ini akan memisahkan seorang *coder* amatir dari *Software Engineer* profesional. Jangan ragu untuk bereksperimen dan mencoba di *project* lokal Anda sendiri.</p>
+                </div>
+
+                <!-- Related Posts (Baca Juga Artikel Lainnya) -->
+                <div class="mt-20 pt-10 border-t border-slate-200">
+                    <h3 class="text-2xl font-black text-slate-900 mb-8">Baca Juga Artikel Lainnya</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div v-for="(post, idx) in blogPosts.filter(p => p.title !== activePost.title).slice(0, 2)" :key="idx" @click="navigate('blog-detail', post)" class="bg-white border border-slate-200 rounded-[1.5rem] overflow-hidden hover:shadow-xl transition-all group cursor-pointer flex flex-col">
+                            <div class="aspect-video bg-slate-100 overflow-hidden relative">
+                                <img :src="post.img" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            </div>
+                            <div class="p-5 flex flex-col flex-grow">
+                                <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 mb-2">
+                                    <span class="text-primary-600 uppercase tracking-wider bg-primary-50 px-2 py-1 rounded">{{ post.category }}</span>
+                                    <span>{{ post.readTime }} read</span>
+                                </div>
+                                <h3 class="text-base font-bold text-slate-900 mb-2 group-hover:text-primary-600 line-clamp-2 leading-snug">{{ post.title }}</h3>
+                                <p class="text-xs text-slate-500 line-clamp-2 mt-auto">{{ post.excerpt }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: TENTANG KAMI 
+        =============================== -->
+        <div v-else-if="currentPage === 'about'" class="flex-grow bg-white py-16 animate-fade">
+            <div class="max-w-6xl mx-auto px-4">
+                <div class="text-center mb-16 max-w-3xl mx-auto">
+                    <span class="inline-flex items-center py-1.5 px-4 rounded-full bg-primary-50 text-primary-700 text-xs font-bold mb-4 border border-primary-100">Our Story</span>
+                    <h1 class="text-4xl md:text-5xl font-black text-slate-900 mb-6 tracking-tight">Misi Kami Mencetak <span class="text-primary-600">1 Juta</span> Talenta Digital Indonesia</h1>
+                    <p class="text-slate-500 text-lg leading-relaxed">EduTech didirikan pada tahun 2024 untuk memecahkan masalah kesenjangan antara pendidikan akademis konvensional dengan kebutuhan keahlian (*skill*) yang nyata di industri teknologi saat ini.</p>
+                </div>
+                
+                <div class="rounded-[3rem] overflow-hidden aspect-video md:aspect-[21/9] mb-20 shadow-2xl relative">
+                    <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2000" alt="Tim EduTech" class="w-full h-full object-cover">
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-8 text-center mb-20 border-y border-slate-100 py-12">
+                    <div>
+                        <h3 class="text-5xl font-black text-slate-900 mb-2">10K+</h3>
+                        <p class="text-slate-500 font-bold">Siswa Lulusan</p>
+                    </div>
+                    <div>
+                        <h3 class="text-5xl font-black text-slate-900 mb-2">50+</h3>
+                        <p class="text-slate-500 font-bold">Hiring Partner</p>
+                    </div>
+                    <div>
+                        <h3 class="text-5xl font-black text-slate-900 mb-2">150+</h3>
+                        <p class="text-slate-500 font-bold">Kelas Premium</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: CEK SERTIFIKAT 
+        =============================== -->
+        <div v-else-if="currentPage === 'cek-sertifikat'" class="flex-grow bg-slate-50 py-20 animate-fade flex items-center justify-center px-4">
+            <div class="max-w-2xl w-full bg-white rounded-[3rem] shadow-xl border border-slate-200 p-8 md:p-14 text-center">
+                <div class="w-20 h-20 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-primary-100">
+                    <i class="ph-duotone ph-seal-check text-5xl text-primary-500"></i>
+                </div>
+                <h1 class="text-3xl font-black text-slate-900 mb-4">Verifikasi Sertifikat</h1>
+                <p class="text-slate-500 mb-10 text-sm max-w-md mx-auto">Pastikan keaslian sertifikat lulusan EduTech dengan memasukkan Credential ID yang tertera pada dokumen.</p>
+                
+                <div class="relative max-w-md mx-auto mb-4">
+                    <input type="text" placeholder="Contoh: EDT-2026-XYZ123" class="w-full pl-5 pr-32 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 font-medium text-slate-700 placeholder-slate-400">
+                    <button class="absolute right-2 top-2 bottom-2 px-5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-primary-600 transition">Verifikasi</button>
+                </div>
+                <p class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-6">Sertifikat terenkripsi secara digital</p>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: FAQ / PUSAT BANTUAN
+        =============================== -->
+        <div v-else-if="currentPage === 'faq'" class="flex-grow bg-slate-50 py-16 animate-fade">
+            <div class="max-w-3xl mx-auto px-4">
+                <div class="text-center mb-10">
+                    <div class="w-14 h-14 bg-white rounded-2xl mx-auto flex items-center justify-center text-2xl text-primary-600 mb-4 border border-slate-200 shadow-sm"><i class="ph-fill ph-question"></i></div>
+                    <h1 class="text-3xl md:text-4xl font-black text-slate-900 mb-3 tracking-tight">Pusat Bantuan (FAQ)</h1>
+                    <p class="text-slate-500 text-base">Jawaban cepat untuk pertanyaan yang sering ditanyakan mengenai kelas dan sistem belajar kami.</p>
+                </div>
+
+                <div class="space-y-3">
+                    <div v-for="(item, index) in faqs" :key="index" class="bg-white border border-slate-200 rounded-2xl overflow-hidden transition-all duration-300" :class="item.open ? 'shadow-md ring-1 ring-primary-500' : 'hover:border-slate-300'">
+                        <button @click="item.open = !item.open" class="w-full px-5 py-4 flex items-center justify-between font-bold text-slate-900 text-left focus:outline-none">
+                            <span class="text-sm md:text-base pr-4">{{ item.q }}</span>
+                            <div class="w-7 h-7 shrink-0 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center transition-transform duration-300" :class="item.open ? 'rotate-180 bg-primary-50 text-primary-600 border-primary-100' : ''">
+                                <i class="ph-bold ph-caret-down text-sm"></i>
+                            </div>
+                        </button>
+                        <transition name="accordion">
+                            <div v-show="item.open" class="px-5 pb-5 pt-0 text-slate-600 text-sm leading-relaxed">
+                                <hr class="border-slate-100 mb-3">
+                                {{ item.a }}
+                            </div>
+                        </transition>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             VIEW: LOGIN / REGISTER (SPLIT SCREEN)
+        =============================== -->
+        <div v-else-if="currentPage === 'register' || currentPage === 'login'" class="flex-grow flex animate-fade bg-slate-50 items-center justify-center p-4">
+            <div class="max-w-5xl w-full bg-white rounded-[2rem] shadow-xl border border-slate-200 flex overflow-hidden min-h-[500px] my-10">
+                <div class="hidden md:flex md:w-1/2 relative bg-slate-900 flex-col justify-between p-12 overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-primary-900/90 to-slate-900 z-10"></div>
+                    <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1000')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
+                    
+                    <div class="relative z-20 flex items-center">
+                        <div class="w-10 h-10 rounded-xl bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center text-white mr-3">
+                            <i class="ph-bold ph-code text-xl"></i>
+                        </div>
+                        <span class="font-extrabold text-2xl text-white">EduTech.</span>
+                    </div>
+                    
+                    <div class="relative z-20 mt-12">
+                        <h2 class="text-3xl lg:text-4xl font-black text-white leading-tight mb-4 tracking-tight">Percepat Pertumbuhan Karir IT Anda.</h2>
+                        <p class="text-slate-300 text-sm lg:text-base leading-relaxed">Akses ke 100+ modul, framework modern, dan studi kasus industri dalam satu platform.</p>
+                        
+                        <div class="mt-8 bg-white/10 backdrop-blur border border-white/20 p-5 rounded-2xl">
+                            <div class="flex text-yellow-400 mb-2 text-xs"><i class="ph-fill ph-star" v-for="n in 5" :key="n"></i></div>
+                            <p class="text-white text-xs italic mb-3">"Investasi terbaik untuk karir saya. Langsung paham alur Nuxt dan Laravel berkat materinya yang to-the-point."</p>
+                            <div class="flex items-center text-white">
+                                <div class="w-6 h-6 rounded-full bg-primary-500 text-[8px] font-bold flex items-center justify-center mr-2 border border-white/30">BS</div>
+                                <div><p class="text-[10px] font-bold">Budi Santoso</p></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-full md:w-1/2 p-8 lg:p-12 flex flex-col justify-center bg-white">
+                    <div class="mb-8 text-center md:text-left">
+                        <h2 class="text-2xl lg:text-3xl font-black text-slate-900 mb-2">{{ currentPage === 'register' ? 'Buat Akun Gratis' : 'Selamat Datang' }}</h2>
+                        <p class="text-slate-500 text-sm">{{ currentPage === 'register' ? 'Akses seluruh fitur pembelajaran.' : 'Silakan masukkan kredensial Anda.' }}</p>
+                    </div>
+
+                    <div class="flex gap-3 mb-6">
+                        <button class="flex-1 py-2.5 border border-slate-200 rounded-xl flex items-center justify-center font-bold text-xs text-slate-700 hover:bg-slate-50 transition shadow-sm">
+                            <img src="https://cdn.simpleicons.org/google" class="h-4 w-4 mr-2 grayscale opacity-70"> Google
+                        </button>
+                        <button class="flex-1 py-2.5 border border-slate-200 rounded-xl flex items-center justify-center font-bold text-xs text-slate-700 hover:bg-slate-50 transition shadow-sm">
+                            <i class="ph-fill ph-github-logo text-lg mr-2"></i> Github
+                        </button>
+                    </div>
+
+                    <div class="flex items-center mb-6">
+                        <div class="flex-grow border-t border-slate-200"></div>
+                        <span class="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email</span>
+                        <div class="flex-grow border-t border-slate-200"></div>
+                    </div>
+                    
+                    <form @submit.prevent="isLoggedIn = true; navigate('dashboard')" class="space-y-4">
+                        <div v-if="currentPage === 'register'">
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">Nama Lengkap</label>
+                            <input type="text" placeholder="John Doe" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-primary-500/50 transition-all text-sm font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1.5 ml-1">Email</label>
+                            <input type="email" placeholder="nama@email.com" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-primary-500/50 transition-all text-sm font-medium">
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-1.5 ml-1">
+                                <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider">Password</label>
+                                <a v-if="currentPage === 'login'" href="#" class="text-[10px] font-bold text-primary-600 hover:underline">Lupa?</a>
+                            </div>
+                            <input type="password" placeholder="••••••••" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-primary-500/50 transition-all text-sm font-medium">
+                        </div>
+                        
+                        <button type="submit" class="w-full py-3.5 mt-2 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-primary-600 shadow-lg shadow-slate-900/10 hover:shadow-primary-600/20 transition-all active:scale-95">
+                            {{ currentPage === 'register' ? 'Daftar Sekarang' : 'Masuk Dashboard' }}
+                        </button>
+                    </form>
+                    
+                    <div class="mt-6 text-center text-slate-500 text-xs font-medium">
+                        {{ currentPage === 'register' ? 'Sudah memiliki akun?' : 'Belum memiliki akun?' }}
+                        <button @click="navigate(currentPage === 'register' ? 'login' : 'register')" class="text-primary-600 font-bold hover:underline ml-1">
+                            {{ currentPage === 'register' ? 'Masuk' : 'Daftar' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==============================
+             DASHBOARD (USER)
+        =============================== -->
+        <div v-else-if="currentPage === 'dashboard'" class="flex-grow bg-slate-50 py-10 px-4 animate-fade">
+            <div class="max-w-6xl mx-auto">
+                <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                    <div class="flex items-center">
+                        <div class="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center font-bold text-lg mr-4 text-slate-700 shadow-sm">BS</div>
+                        <div>
+                            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Halo, Budi Santoso! 👋</h1>
+                            <p class="text-slate-500 text-sm">Dashboard pembelajaran Anda.</p>
+                        </div>
+                    </div>
+                    <button @click="navigate('category')" class="px-5 py-2.5 bg-primary-600 text-white rounded-xl font-bold text-sm hover:bg-primary-700 transition shadow-sm w-max">Tambah Kelas Baru</button>
+                </div>
+                
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="md:col-span-2 space-y-6">
+                        <div class="bg-blue-50 border border-blue-200 p-4 rounded-[1.5rem] flex items-start">
+                            <i class="ph-fill ph-info text-blue-500 text-xl mr-3 mt-0.5"></i>
+                            <div>
+                                <h4 class="font-bold text-blue-900 text-sm">Mulai Kelas Pertamamu</h4>
+                                <p class="text-xs text-blue-700 mt-1 leading-relaxed">Anda belum mendaftar di kelas manapun. Yuk temukan kelas yang cocok untuk pengembangan karirmu.</p>
+                                <button @click="navigate('category')" class="mt-2 text-xs font-bold text-blue-800 hover:underline">Lihat Katalog &rarr;</button>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white p-8 rounded-[1.5rem] border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center min-h-[300px]">
+                             <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
+                                 <i class="ph-duotone ph-student text-4xl text-slate-300"></i>
+                             </div>
+                             <h3 class="font-bold text-slate-900 text-base">Kelas Aktif Kosong</h3>
+                             <p class="text-sm text-slate-500 mt-1 max-w-xs">Progress belajar Anda akan otomatis muncul di sini setelah mendaftar.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <div class="bg-white p-5 rounded-[1.5rem] border border-slate-200 shadow-sm">
+                            <h3 class="font-bold text-slate-900 mb-4 uppercase text-[10px] tracking-wider">Statistik Belajar</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div class="w-9 h-9 bg-white rounded-lg flex items-center justify-center text-emerald-500 shadow-sm mr-3"><i class="ph-bold ph-check-circle text-lg"></i></div>
+                                    <div class="flex-1"><p class="text-[10px] text-slate-500 font-bold uppercase tracking-wide">Modul Selesai</p><p class="font-black text-slate-900 text-base">0</p></div>
+                                </div>
+                                <div class="flex items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div class="w-9 h-9 bg-white rounded-lg flex items-center justify-center text-purple-500 shadow-sm mr-3"><i class="ph-bold ph-certificate text-lg"></i></div>
+                                    <div class="flex-1"><p class="text-[10px] text-slate-500 font-bold uppercase tracking-wide">Sertifikat</p><p class="font-black text-slate-900 text-base">0</p></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OTHER PAGES FALLBACK -->
+        <div v-else class="flex-grow bg-slate-50 py-24 px-4 animate-fade flex flex-col items-center justify-center">
+             <div class="text-center max-w-lg">
+                 <div class="w-20 h-20 bg-white rounded-[2rem] mx-auto flex items-center justify-center text-4xl text-slate-300 mb-6 border border-slate-200 shadow-sm"><i class="ph-fill ph-hammer"></i></div>
+                 <h1 class="text-4xl font-black mb-4 text-slate-900 capitalize">{{ currentPage.replace('-', ' ') }}</h1>
+                 <p class="text-slate-500 text-base mb-8 leading-relaxed">Halaman ini masih dalam tahap integrasi dengan backend Laravel kami. Silakan kembali lagi nanti.</p>
+                 <button @click="navigate('landing')" class="px-8 py-3.5 bg-slate-900 text-white rounded-xl font-bold text-sm transition shadow-lg hover:-translate-y-1">Kembali ke Beranda</button>
+             </div>
+        </div>
+
+        <!-- Video Demo Modal -->
+        <transition name="fade">
+            <div v-if="isDemoModalOpen" class="fixed inset-0 z-[100] flex items-center justify-center px-4">
+                <div class="absolute inset-0 bg-slate-900/90 backdrop-blur-sm" @click="isDemoModalOpen = false"></div>
+                <div class="relative bg-black rounded-2xl w-full max-w-4xl aspect-video shadow-2xl overflow-hidden z-10 border border-slate-700">
+                    <button @click="isDemoModalOpen = false" class="absolute top-4 right-4 z-20 w-10 h-10 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition"><i class="ph-bold ph-x"></i></button>
+                    <video autoplay controls class="w-full h-full object-cover"><source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4"></video>
+                </div>
+            </div>
+        </transition>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 pt-16 pb-8 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-8 lg:gap-8 mb-12">
+            <div class="md:col-span-2 lg:pr-8">
+                <div class="flex items-center mb-5">
+                    <div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white mr-2.5">
+                        <i class="ph-bold ph-code text-base"></i>
+                    </div>
+                    <span class="font-black text-xl text-slate-900">EduTech.</span>
+                </div>
+                <p class="text-sm text-slate-500 leading-relaxed mb-6 font-medium">Mencetak talenta digital Indonesia berstandar industri melalui kurikulum ekosistem Vue & Laravel yang modern.</p>
+                
+                <!-- Contact Info Added -->
+                <div class="mb-6 space-y-3">
+                    <div class="flex items-start">
+                        <i class="ph-fill ph-map-pin text-primary-500 mt-0.5 mr-2 text-lg shrink-0"></i>
+                        <p class="text-sm text-slate-600 font-medium leading-relaxed">Jl. Amir Mahmud No.51,<br>Gunung Anyar, Surabaya</p>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="ph-fill ph-whatsapp-logo text-primary-500 mr-2 text-lg shrink-0"></i>
+                        <p class="text-sm text-slate-600 font-medium">+62 856-5484-31749</p>
+                    </div>
+                </div>
+
+                <div class="flex space-x-2.5 text-slate-400">
+                    <a href="#" class="w-9 h-9 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center hover:bg-primary-50 hover:text-primary-600 hover:border-primary-200 transition-all"><i class="ph-fill ph-instagram-logo text-base"></i></a>
+                    <a href="#" class="w-9 h-9 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center hover:bg-primary-50 hover:text-primary-600 hover:border-primary-200 transition-all"><i class="ph-fill ph-youtube-logo text-base"></i></a>
+                    <a href="#" class="w-9 h-9 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center hover:bg-primary-50 hover:text-primary-600 hover:border-primary-200 transition-all"><i class="ph-fill ph-linkedin-logo text-base"></i></a>
+                </div>
+            </div>
+            <div>
+                <h4 class="text-slate-900 font-bold mb-4 text-xs uppercase tracking-wider">Program</h4>
+                <ul class="space-y-2.5 text-sm font-medium text-slate-500">
+                    <li><a href="#" @click.prevent="navigate('bootcamp')" class="hover:text-primary-600 transition">Bootcamp Premium</a></li>
+                    <li><a href="#" @click.prevent="navigate('category')" class="hover:text-primary-600 transition">Katalog Kelas</a></li>
+                    <li><a href="#" @click.prevent="navigate('roadmap')" class="hover:text-primary-600 transition">Roadmap Karir</a></li>
+                    <li><a href="#" @click.prevent="navigate('webinar')" class="hover:text-primary-600 transition">Webinar & Event</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-slate-900 font-bold mb-4 text-xs uppercase tracking-wider">Perusahaan</h4>
+                <ul class="space-y-2.5 text-sm font-medium text-slate-500">
+                    <li><a href="#" @click.prevent="navigate('about')" class="hover:text-primary-600 transition">Tentang Kami</a></li>
+                    <li><a href="#" @click.prevent="navigate('mentors')" class="hover:text-primary-600 transition">Instruktur</a></li>
+                    <li><a href="#" @click.prevent="navigate('career')" class="hover:text-primary-600 transition">Karir <span class="text-[9px] bg-primary-50 text-primary-600 px-1.5 py-0.5 rounded ml-1">HIRING</span></a></li>
+                    <li><a href="#" @click.prevent="navigate('blog')" class="hover:text-primary-600 transition">Blog & Artikel</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-slate-900 font-bold mb-4 text-xs uppercase tracking-wider">Bantuan & Legal</h4>
+                <ul class="space-y-2.5 text-sm font-medium text-slate-500">
+                    <li><a href="#" @click.prevent="navigate('faq')" class="hover:text-primary-600 transition">FAQ Bantuan</a></li>
+                    <li><a href="#" @click.prevent="navigate('cek-sertifikat')" class="hover:text-primary-600 transition">Verifikasi Sertifikat</a></li>
+                    <li><a href="#" class="hover:text-primary-600 transition">Syarat & Ketentuan</a></li>
+                    <li><a href="#" class="hover:text-primary-600 transition">Privasi Data</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center pt-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            <p>&copy; 2026 EduTech LMS. Hak Cipta Dilindungi.</p>
+            <div class="mt-3 md:mt-0 flex space-x-4">
+                <span class="flex items-center"><i class="ph-bold ph-check mr-1 text-emerald-500"></i> Nuxt 4</span>
+                <span class="flex items-center"><i class="ph-bold ph-check mr-1 text-emerald-500"></i> Laravel 13</span>
+            </div>
+        </div>
+    </footer>
+
+</div>
+
+<script>
+    const { createApp, ref, computed, onMounted, onUnmounted, nextTick } = Vue
+
+    createApp({
+        setup() {
+            const currentPage = ref('landing')
+            const isLoggedIn = ref(false)
+            const isMobileMenuOpen = ref(false)
+            const isDemoModalOpen = ref(false)
+            
+            const activeCourse = ref(null)
+            const activeJob = ref(null)
+            const activePost = ref(null)
+            
+            const activeCategoryFilter = ref('Semua Kategori')
+            const activeLevelFilter = ref('Semua Level')
+            const searchQuery = ref('')
+            
+            const impactStatsVisible = ref(false)
+            const landingStatsVisible = ref(false)
+
+            const mouseX = ref(0); const mouseY = ref(0)
+            const onMouseMove = (e) => { 
+                if(window.innerWidth < 768) return; 
+                mouseX.value = (e.clientX / window.innerWidth - 0.5) * 2
+                mouseY.value = (e.clientY / window.innerHeight - 0.5) * 2 
+            }
+            const resetMouse = () => { mouseX.value = 0; mouseY.value = 0; }
+
+            const timelineProgress = ref(0)
+            const calculateTimelineProgress = () => {
+                if (currentPage.value !== 'roadmap') return;
+                const timeline = document.getElementById('roadmap-timeline');
+                if (timeline) {
+                    const rect = timeline.getBoundingClientRect();
+                    const drawPoint = window.innerHeight * 0.55; 
+                    let progress = (drawPoint - rect.top) / rect.height;
+                    progress = Math.max(0, Math.min(1, progress));
+                    timelineProgress.value = progress * 100;
+                }
+            };
+
+            const handleScroll = () => {
+                calculateTimelineProgress();
+                
+                if (currentPage.value === 'testimonials' && !impactStatsVisible.value) {
+                    const el = document.getElementById('impact-stats-section');
+                    if (el && el.getBoundingClientRect().top < window.innerHeight * 0.85) {
+                        impactStatsVisible.value = true;
+                    }
+                }
+                if (currentPage.value === 'landing' && !landingStatsVisible.value) {
+                    landingStatsVisible.value = true;
+                }
+            };
+
+            onMounted(() => {
+                window.addEventListener('scroll', handleScroll);
+                handleScroll(); 
+            });
+            
+            onUnmounted(() => {
+                window.removeEventListener('scroll', handleScroll);
+            });
+
+            const navigate = (page, data = null) => {
+                currentPage.value = page
+                isMobileMenuOpen.value = false
+                window.scrollTo(0, 0)
+                
+                if (page === 'category' && data) activeCategoryFilter.value = data
+                if (page === 'course-detail' && data) {
+                    activeCourse.value = data;
+                    courseSyllabus.value.forEach((mod, idx) => mod.open = (idx === 0));
+                }
+                if (page === 'job-detail' && data) activeJob.value = data
+                if (page === 'blog-detail' && data) activePost.value = data
+                
+                if (page === 'testimonials') impactStatsVisible.value = false;
+                if (page === 'landing') landingStatsVisible.value = false;
+
+                nextTick(() => handleScroll());
+            }
+
+            const categories = ref(['Web Development', 'Backend & Database', 'Mobile App', 'DevOps & Cloud', 'UI/UX Design', 'Data Science'])
+            const categoriesPreview = ref([
+                { name: 'Web Development', icon: 'ph-duotone ph-browser', count: 24, color: 'text-blue-500', hoverColor: 'group-hover:text-blue-400', hoverAnim: 'group-hover:animate-bounce-gentle group-hover:drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]' },
+                { name: 'Backend & API', icon: 'ph-duotone ph-database', count: 18, color: 'text-emerald-500', hoverColor: 'group-hover:text-emerald-400', hoverAnim: 'group-hover:animate-pulse-fast group-hover:drop-shadow-[0_0_15px_rgba(16,185,129,0.6)]' },
+                { name: 'DevOps & Server', icon: 'ph-duotone ph-cloud-arrow-up', count: 12, color: 'text-purple-500', hoverColor: 'group-hover:text-purple-400', hoverAnim: 'group-hover:animate-fly-up group-hover:drop-shadow-[0_0_15px_rgba(168,85,247,0.6)]' },
+                { name: 'UI/UX Design', icon: 'ph-duotone ph-paint-brush-broad', count: 15, color: 'text-pink-500', hoverColor: 'group-hover:text-pink-400', hoverAnim: 'group-hover:animate-swing group-hover:drop-shadow-[0_0_15px_rgba(236,72,153,0.6)]' }
+            ])
+            
+            const brands = ref([
+                { name: 'Google', img: 'https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg' },
+                { name: 'Netflix', img: 'https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg' },
+                { name: 'Spotify', img: 'https://upload.wikimedia.org/wikipedia/commons/2/26/Spotify_logo_with_text.svg' },
+                { name: 'Tokopedia', img: 'https://upload.wikimedia.org/wikipedia/commons/a/a7/Tokopedia.svg' },
+                { name: 'Stripe', img: 'https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg' },
+                { name: 'PayPal', img: 'https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg' }
+            ])
+
+            const stats = ref([
+                { label: 'Siswa Belajar', duration: '4.0s', values: ['0', '1', '3', '5', '6', '7', '8', '9', '10'], suffix: 'K+' },
+                { label: 'Total Kelas', duration: '4.5s', values: ['0', '20', '45', '60', '80', '100', '120', '135', '150'], suffix: '+' },
+                { label: 'Mentor Aktif', duration: '4.2s', values: ['0', '5', '15', '25', '35', '40', '45', '48', '50'], suffix: '+' },
+                { label: 'Rating Global', duration: '4.8s', values: ['0.0', '1.5', '2.8', '3.5', '4.0', '4.5', '4.7', '4.8', '4.9'], suffix: '/5' }
+            ])
+
+            const mentorsList = ref([
+                { name: 'Ahmad Fauzi', role: 'Frontend Engineer', company: 'Tokopedia', image: 'https://i.pravatar.cc/150?img=11' },
+                { name: 'Budi Santoso', role: 'Backend Lead', company: 'Gojek', image: 'https://i.pravatar.cc/150?img=8' },
+                { name: 'Sarah Wijaya', role: 'UI/UX Designer', company: 'Traveloka', image: 'https://i.pravatar.cc/150?img=5' },
+                { name: 'Fajar Nugraha', role: 'Cloud Architect', company: 'Netflix', image: 'https://i.pravatar.cc/150?img=15' },
+            ])
+
+            const faqs = ref([
+                { q: 'Apakah pemula bisa mengikuti kelas ini?', a: 'Sangat bisa! Kurikulum kami disusun berjenjang mulai dari Fundamental (HTML, CSS, JS) hingga materi Advanced (Nuxt & Laravel).', open: false },
+                { q: 'Berapa lama batas waktu akses materi?', a: 'Anda mendapatkan akses materi Seumur Hidup (Lifetime) cukup dengan satu kali pembayaran.', open: false },
+                { q: 'Apakah ada forum tanya jawab jika saya error?', a: 'Ya, setiap siswa mendapatkan akses ke grup komunitas Discord khusus untuk bertanya langsung ke instruktur.', open: false },
+                { q: 'Apakah kelas ini mengajarkan deploy ke VPS?', a: 'Tentu. Di kelas DevOps & Backend kami mengajarkan setup VPS, Docker Compose, dan konfigurasi Nginx.', open: false }
+            ])
+
+            const impactStats = ref([
+                { prefix: '', values: ['0', '15', '30', '45', '60', '75', '85', '92', '96'], suffix: '%', suffixClass: 'ml-0.5', duration: '3.5s', title: 'Tingkat Penyerapan Kerja', desc: 'Alumni mendapatkan pekerjaan <br>dalam waktu 3 bulan setelah lulus.' },
+                { prefix: 'Rp', values: ['0.0', '1.5', '3.0', '4.5', '6.0', '7.0', '7.8', '8.2', '8.5'], suffix: 'JT+', suffixClass: 'text-2xl ml-0.5 mb-0.5', duration: '4.0s', title: 'Rata-rata Gaji Pertama', desc: 'Kompensasi entry-level untuk posisi<br>Software Engineer alumni EduTech.' },
+                { prefix: '', values: ['0', '300', '700', '1.200', '1.800', '2.300', '2.600', '2.800', '3.000'], suffix: '+', suffixClass: 'ml-0.5', duration: '4.5s', title: 'Sertifikat Diterbitkan', desc: 'Telah diakui kredibilitasnya oleh<br>berbagai perusahaan teknologi.' }
+            ])
+
+            const courseSyllabus = ref([
+                { title: 'Fundamental & Instalasi Persiapan', duration: '4 Video • 1 Kuis', open: true, items: ['Pengenalan Konsep Dasar', 'Instalasi Environment', 'Struktur Direktori'] },
+                { title: 'Konsep Inti & Arsitektur', duration: '6 Video • 2 Tugas', open: false, items: ['Routing & Navigation', 'State Management', 'Lifecycle Hooks'] },
+                { title: 'Integrasi Database & API', duration: '5 Video • 1 Kuis', open: false, items: ['Fetch Data dengan Axios/Fetch', 'CRUD Operations', 'Error Handling'] },
+                { title: 'Otentikasi & Keamanan', duration: '4 Video • 1 Tugas', open: false, items: ['Login & Register Auth', 'Middleware / Route Guards', 'JWT Token Management'] },
+                { title: 'Deployment & Final Project', duration: '3 Video • 1 Project', open: false, items: ['Build Production', 'Setup VPS / Hosting', 'Presentasi Project'] },
+            ])
+
+            const webinars = ref([
+                { title: 'Masterclass: Migrasi Vue 2 ke Vue 3 Composition API', date: '24 Mei 2026 • 19:00 WIB', speaker: 'Ahmad Fauzi', speakerInitials: 'AF', type: 'Gratis', img: 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800' },
+                { title: 'Optimasi Database PostgreSQL skala Enterprise', date: '28 Mei 2026 • 20:00 WIB', speaker: 'Budi Santoso', speakerInitials: 'BS', type: 'Premium', img: 'https://images.unsplash.com/photo-1544383835-bda2bc66a55d?q=80&w=800' },
+                { title: 'Kupas Tuntas Docker & Nginx untuk Pemula', date: '05 Juni 2026 • 19:30 WIB', speaker: 'Fajar Nugraha', speakerInitials: 'FN', type: 'Gratis', img: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=800' }
+            ])
+
+            const jobs = ref([
+                { title: 'Senior Frontend Engineer (Vue/Nuxt)', type: 'Full-time', location: 'Remote / Surabaya', description: 'Kami mencari Senior Frontend Engineer yang berpengalaman dengan ekosistem Vue.js (khususnya Nuxt 4) untuk memimpin pengembangan platform LMS kami.', requirements: ['Minimal 3 tahun pengalaman menggunakan Vue.js/Nuxt.js', 'Mahir menggunakan Tailwind CSS', 'Memahami konsep SSR/SSG dengan baik', 'Pengalaman menggunakan Pinia untuk State Management'] },
+                { title: 'Backend Developer (Laravel/Golang)', type: 'Full-time', location: 'Surabaya, ID', description: 'Anda akan bertanggung jawab untuk membangun dan memelihara REST API yang scalable menggunakan Laravel 13 dan melakukan migrasi beberapa service ke Golang.', requirements: ['Minimal 2 tahun pengalaman menggunakan Laravel', 'Pengalaman dasar dengan Golang adalah nilai plus', 'Fasih dengan PostgreSQL dan Redis', 'Memahami konsep Microservices'] },
+                { title: 'Technical Content Creator', type: 'Part-time', location: 'Remote', description: 'Bergabung dengan tim edukasi kami untuk membuat artikel tutorial, video pendek, dan materi belajar terkait pengembangan web terkini.', requirements: ['Pernah membuat konten teknis (Blog/YouTube/Tiktok)', 'Memiliki basic pemrograman web', 'Mampu menjelaskan konsep rumit menjadi sederhana'] },
+                { title: 'UI/UX Designer', type: 'Full-time', location: 'Remote / Surabaya', description: 'Rancang antarmuka pengguna yang estetik dan fungsional. Anda akan bekerja erat dengan tim frontend untuk mengimplementasikan Design System.', requirements: ['Mahir menggunakan Figma', 'Memiliki portfolio UI/UX yang kuat', 'Paham dengan konsep Design System'] }
+            ])
+
+            const blogPosts = ref([
+                { title: 'Cara Setup Tailwind CSS di Nuxt 4 dalam 5 Menit', category: 'Tutorial', readTime: '4 Min', excerpt: 'Panduan praktis dan cepat untuk mengintegrasikan Tailwind CSS versi terbaru di project Nuxt 4 Anda.', img: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=800' },
+                { title: 'Pentingnya Redis Caching di Laravel 13', category: 'Backend', readTime: '7 Min', excerpt: 'Pelajari bagaimana Redis dapat mempercepat response API Laravel Anda hingga 10x lipat untuk skala besar.', img: 'https://images.unsplash.com/photo-1623479322729-28b25c16b011?q=80&w=800' },
+                { title: 'Roadmap Menjadi DevOps Engineer 2026', category: 'Karir', readTime: '6 Min', excerpt: 'Tools dan teknologi yang wajib Anda kuasai jika ingin berkarir sebagai DevOps Engineer tahun ini.', img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=800' }
+            ])
+
+            const allCourses = ref([
+                { id: 1, title: 'Fullstack Web: Nuxt 4 & Laravel 13 API Enterprise', category: 'Web Development', level: 'Menengah', instructor: 'Ahmad Fauzi', instructorInitials: 'AF', price: 'Rp 499.000', rating: '4.9', students: '1.2k', image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&q=80' },
+                { id: 2, title: 'Mastering PostgreSQL 17 & Redis 7 Caching', category: 'Backend & Database', level: 'Lanjutan', instructor: 'Budi Santosa', instructorInitials: 'BS', price: 'Rp 399.000', rating: '4.8', students: '800', image: 'https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=800&q=80' },
+                { id: 3, title: 'Docker Compose & Nginx Reverse Proxy Setup', category: 'DevOps & Cloud', level: 'Menengah', instructor: 'Fajar Nugraha', instructorInitials: 'FN', price: 'Rp 549.000', rating: '5.0', students: '500', image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&q=80' },
+                { id: 4, title: 'Dasar Pemrograman Web: HTML, CSS & JS', category: 'Web Development', level: 'Pemula', instructor: 'Rina Melati', instructorInitials: 'RM', price: 'Gratis', rating: '4.7', students: '2.1k', image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&q=80' },
+                { id: 5, title: 'Laravel Sanctum Auth & Rest API Security', category: 'Backend & Database', level: 'Menengah', instructor: 'Reza Rahadian', instructorInitials: 'RR', price: 'Rp 450.000', rating: '4.8', students: '900', image: 'https://images.unsplash.com/photo-1555099962-4199c345e5dd?w=800&q=80' },
+                { id: 6, title: 'UI/UX Design System untuk Aplikasi SaaS', category: 'UI/UX Design', level: 'Pemula', instructor: 'Sarah Wijaya', instructorInitials: 'SW', price: 'Rp 450.000', rating: '4.9', students: '1.5k', image: 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?w=800&q=80' },
+                { id: 7, title: 'Belajar Fundamental Python Data Science', category: 'Data Science', level: 'Pemula', instructor: 'Andi Kusuma', instructorInitials: 'AK', price: 'Rp 350.000', rating: '4.7', students: '1.1k', image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80' },
+                { id: 8, title: 'Mastering React Native 2026', category: 'Mobile App', level: 'Menengah', instructor: 'Dian Sastro', instructorInitials: 'DS', price: 'Rp 599.000', rating: '4.9', students: '850', image: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&q=80' },
+                { id: 9, title: 'Golang Microservices & gRPC Architecture', category: 'Backend & Database', level: 'Lanjutan', instructor: 'Budi Santosa', instructorInitials: 'BS', price: 'Rp 650.000', rating: '5.0', students: '420', image: 'https://images.unsplash.com/photo-1623479322729-28b25c16b011?w=800&q=80' },
+                { id: 10, title: 'Advanced Vue 3, Pinia & Composition API', category: 'Web Development', level: 'Menengah', instructor: 'Rina Melati', instructorInitials: 'RM', price: 'Rp 400.000', rating: '4.8', students: '1.5k', image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&q=80' },
+                { id: 11, title: 'Kubernetes (K8s) & CI/CD Pipelines Mastery', category: 'DevOps & Cloud', level: 'Lanjutan', instructor: 'Fajar Nugraha', instructorInitials: 'FN', price: 'Rp 750.000', rating: '4.9', students: '350', image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80' },
+                { id: 12, title: 'Figma to Code: UI/UX Advanced Prototyping', category: 'UI/UX Design', level: 'Menengah', instructor: 'Sarah Wijaya', instructorInitials: 'SW', price: 'Rp 390.000', rating: '4.8', students: '1.8k', image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&q=80' },
+                { id: 13, title: 'Flutter State Management: Bloc & Riverpod', category: 'Mobile App', level: 'Lanjutan', instructor: 'Dian Sastro', instructorInitials: 'DS', price: 'Rp 500.000', rating: '4.7', students: '600', image: 'https://images.unsplash.com/photo-1526498460520-4c246339dccb?w=800&q=80' },
+                { id: 14, title: 'Machine Learning with Python & Scikit-Learn', category: 'Data Science', level: 'Menengah', instructor: 'Andi Kusuma', instructorInitials: 'AK', price: 'Rp 550.000', rating: '4.9', students: '950', image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80' },
+                { id: 15, title: 'Modern JavaScript Masterclass (ES6+)', category: 'Web Development', level: 'Pemula', instructor: 'Ahmad Fauzi', instructorInitials: 'AF', price: 'Rp 299.000', rating: '4.8', students: '3.5k', image: 'https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=800&q=80' },
+                { id: 16, title: 'Dasar Logika PHP & OOP untuk Pemula', category: 'Backend & Database', level: 'Pemula', instructor: 'Reza Rahadian', instructorInitials: 'RR', price: 'Rp 250.000', rating: '4.7', students: '2.8k', image: 'https://images.unsplash.com/photo-1555099962-4199c345e5dd?w=800&q=80' }
+            ])
+
+            const testimonials = ref([
+                { name: 'Rina Melati', role: 'Frontend Engineer di Tokopedia', avatar: 'https://i.pravatar.cc/150?img=47', quote: 'Materi Nuxt 4 di sini paling update. Saya yang sebelumnya bingung dengan konsep SSR jadi sangat paham dan langsung implementasi di kantor.', colorClass: 'bg-blue-50/50 hover:bg-blue-50/80 border-blue-100' },
+                { name: 'Andi Kusuma', role: 'Backend Engineer', avatar: 'https://i.pravatar.cc/150?img=15', quote: 'Pembahasan Laravel 13 dan API Security sangat mendalam. Tidak hanya teori, tapi *best practice* yang dipakai industri.', colorClass: 'bg-white hover:bg-slate-50 border-slate-100' },
+                { name: 'Fajar Nugraha', role: 'DevOps Specialist', avatar: 'https://i.pravatar.cc/150?img=11', quote: 'EduTech berhasil mengubah cara saya setup Docker & Nginx. Dulu sering error, sekarang deploy aplikasi semulus jalan tol.', colorClass: 'bg-purple-50/50 hover:bg-purple-50/80 border-purple-100' },
+                { name: 'Sarah Wijaya', role: 'Mahasiswa IT', avatar: 'https://i.pravatar.cc/150?img=5', quote: 'Sangat cocok untuk pemula. Instrukturnya menjelaskan dengan bahasa manusia, bukan bahasa alien. Sangat terbantu!', colorClass: 'bg-white hover:bg-slate-50 border-slate-100' },
+                { name: 'Reza Aditya', role: 'Freelance Developer', avatar: 'https://i.pravatar.cc/150?img=12', quote: 'Berkat portofolio hasil kelas dari EduTech, saya dipercaya klien luar negeri dengan *rate* dollar yang memuaskan.', colorClass: 'bg-emerald-50/50 hover:bg-emerald-50/80 border-emerald-100' },
+                { name: 'Diana Fitri', role: 'UI/UX Designer', avatar: 'https://i.pravatar.cc/150?img=1', quote: 'Platform ini luar biasa. Saya belajar pembuatan design system dan langsung bisa diterapkan secara konsisten di proyek UI kantor saya.', colorClass: 'bg-pink-50/50 hover:bg-pink-50/80 border-pink-100' },
+                { name: 'Kevin Pratama', role: 'Data Analyst', avatar: 'https://i.pravatar.cc/150?img=13', quote: 'Roadmap data science-nya sangat terstruktur. Tidak membingungkan untuk pemula yang baru belajar Python dan analisa data mentah.', colorClass: 'bg-yellow-50/50 hover:bg-yellow-50/80 border-yellow-100' },
+                { name: 'Citra Kirana', role: 'Mobile Developer', avatar: 'https://i.pravatar.cc/150?img=9', quote: 'Materi Flutter State Management-nya yang terbaik sejauh ini. Riverpod dijelaskan sampai ke akar-akarnya, gak cuma disuruh ketik doang.', colorClass: 'bg-indigo-50/50 hover:bg-indigo-50/80 border-indigo-100' }
+            ])
+            
+            const testimonialsRow1 = computed(() => testimonials.value.slice(0, 4))
+            const testimonialsRow2 = computed(() => testimonials.value.slice(4, 8))
+
+            const activeRoadmap = ref('frontend')
+            const roadmaps = ref([
+                { id: 'frontend', title: 'Frontend Developer', icon: 'ph-bold ph-browser', description: 'Kuasai pembuatan antarmuka web interaktif yang cepat dan SEO-friendly menggunakan Vue 3 & Nuxt 4.', steps: [
+                    { title: 'Web Fundamental', desc: 'Pemahaman mendalam tentang struktur HTML5, styling CSS3, dan logika JavaScript Vanilla.', courseTitle: 'Dasar Pemrograman Web: HTML, CSS & JS', courseCategory: 'Web Development' },
+                    { title: 'Modern JavaScript', desc: 'Eksplorasi sintaks modern ES6+, Async/Await, dan manipulasi DOM lanjutan.', courseTitle: 'Modern JavaScript Masterclass (ES6+)', courseCategory: 'Web Development' },
+                    { title: 'Vue & Nuxt Mastery', desc: 'Membangun aplikasi SSR/SSG skala industri menggunakan framework Vue 3 dan Nuxt 4.', courseTitle: 'Fullstack Web: Nuxt 4 & Laravel 13 API Enterprise', courseCategory: 'Web Development' }
+                ]},
+                { id: 'backend', title: 'Backend Developer', icon: 'ph-bold ph-database', description: 'Rancang arsitektur REST API yang tangguh, aman, dan scalable menggunakan ekosistem Laravel.', steps: [
+                    { title: 'PHP & OOP Fundamental', desc: 'Pahami dasar bahasa PHP, Object Oriented Programming (OOP), dan struktur data.', courseTitle: 'Dasar Logika PHP & OOP untuk Pemula', courseCategory: 'Backend & Database' },
+                    { title: 'Database Design & Cache', desc: 'Merancang relasi database menggunakan PostgreSQL dan optimasi query dengan Redis.', courseTitle: 'Mastering PostgreSQL 17 & Redis 7 Caching', courseCategory: 'Backend & Database' },
+                    { title: 'Laravel API & Microservices', desc: 'Membangun RESTful API dengan otentikasi Sanctum dan beralih ke arsitektur Golang.', courseTitle: 'Golang Microservices & gRPC Architecture', courseCategory: 'Backend & Database' }
+                ]},
+                { id: 'devops', title: 'DevOps Engineer', icon: 'ph-bold ph-cloud-arrow-up', description: 'Otomatisasi deployment dan manajemen infrastruktur server modern menggunakan Docker & K8s.', steps: [
+                    { title: 'Linux & Docker Containerization', desc: 'Membungkus aplikasi backend/frontend ke dalam container Docker yang terisolasi.', courseTitle: 'Docker Compose & Nginx Reverse Proxy Setup', courseCategory: 'DevOps & Cloud' },
+                    { title: 'Kubernetes Orchestration', desc: 'Manajemen kontainer skala besar dengan K8s dan CI/CD Pipelines.', courseTitle: 'Kubernetes (K8s) & CI/CD Pipelines Mastery', courseCategory: 'DevOps & Cloud' }
+                ]},
+                { id: 'mobile', title: 'Mobile Developer', icon: 'ph-bold ph-device-mobile', description: 'Buat aplikasi mobile cross-platform Android & iOS dengan performa native.', steps: [
+                    { title: 'React Native Basics', desc: 'Membangun UI aplikasi mobile menggunakan komponen React Native.', courseTitle: 'Mastering React Native 2026', courseCategory: 'Mobile App' },
+                    { title: 'Flutter State Management', desc: 'Mengelola state kompleks aplikasi menggunakan arsitektur Bloc & Riverpod di Flutter.', courseTitle: 'Flutter State Management: Bloc & Riverpod', courseCategory: 'Mobile App' }
+                ]},
+                { id: 'uiux', title: 'UI/UX Designer', icon: 'ph-bold ph-paint-brush-broad', description: 'Rancang antarmuka pengguna yang estetik, fungsional, dan memiliki user experience tinggi.', steps: [
+                    { title: 'Design System & Prototyping', desc: 'Membangun komponen UI yang konsisten dan interaktif untuk aplikasi SaaS.', courseTitle: 'UI/UX Design System untuk Aplikasi SaaS', courseCategory: 'UI/UX Design' },
+                    { title: 'Figma Advanced', desc: 'Menerjemahkan desain figma menjadi prototype yang siap di-coding (handoff) ke frontend.', courseTitle: 'Figma to Code: UI/UX Advanced Prototyping', courseCategory: 'UI/UX Design' }
+                ]},
+                { id: 'data', title: 'Data Scientist', icon: 'ph-bold ph-chart-line-up', description: 'Olah data mentah menjadi wawasan bisnis menggunakan Python dan algoritma Machine Learning.', steps: [
+                    { title: 'Python Fundamentals', desc: 'Dasar-dasar sintaks Python dan pemrosesan data (Pandas/Numpy).', courseTitle: 'Belajar Fundamental Python Data Science', courseCategory: 'Data Science' },
+                    { title: 'Machine Learning', desc: 'Menerapkan model prediktif dan klasifikasi menggunakan Scikit-Learn.', courseTitle: 'Machine Learning with Python & Scikit-Learn', courseCategory: 'Data Science' }
+                ]}
+            ])
+            const currentRoadmapData = computed(() => roadmaps.value.find(r => r.id === activeRoadmap.value))
+
+            const getStepColorClass = (index) => {
+                const colors = [
+                    { bg: 'bg-gradient-to-br from-blue-50/50 to-white border-blue-200', text: 'text-blue-600', dot: 'border-blue-500 bg-white', dotActive: 'bg-blue-50 border-blue-500', btn: 'text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600' },
+                    { bg: 'bg-gradient-to-br from-purple-50/50 to-white border-purple-200', text: 'text-purple-600', dot: 'border-purple-500 bg-white', dotActive: 'bg-purple-50 border-purple-500', btn: 'text-slate-400 group-hover:bg-purple-50 group-hover:text-purple-600' },
+                    { bg: 'bg-gradient-to-br from-emerald-50/50 to-white border-emerald-200', text: 'text-emerald-600', dot: 'border-emerald-500 bg-white', dotActive: 'bg-emerald-50 border-emerald-500', btn: 'text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-600' },
+                    { bg: 'bg-gradient-to-br from-orange-50/50 to-white border-orange-200', text: 'text-orange-600', dot: 'border-orange-500 bg-white', dotActive: 'bg-orange-50 border-orange-500', btn: 'text-slate-400 group-hover:bg-orange-50 group-hover:text-orange-600' }
+                ];
+                return colors[index % colors.length];
+            };
+
+            const getCourseByTitle = (title) => {
+                return allCourses.value.find(c => c.title === title) || allCourses.value[0];
+            };
+
+            const filteredCourses = computed(() => {
+                return allCourses.value.filter(c => {
+                    const matchCategory = activeCategoryFilter.value === 'Semua Kategori' || c.category === activeCategoryFilter.value;
+                    const matchLevel = activeLevelFilter.value === 'Semua Level' || c.level === activeLevelFilter.value;
+                    const matchSearch = c.title.toLowerCase().includes(searchQuery.value.toLowerCase());
+                    return matchCategory && matchLevel && matchSearch;
+                });
+            })
+
+            const steps = ref([
+                { title: 'Tentukan Alur', desc: 'Pilih role dari Roadmap.', icon: 'ph-fill ph-map-pin-line', color: 'text-primary-500' },
+                { title: 'Pelajari Teori', desc: 'Tonton modul premium 4K.', icon: 'ph-fill ph-play-circle', color: 'text-purple-500' },
+                { title: 'Ngoding Praktik', desc: 'Buat project nyata industri.', icon: 'ph-fill ph-terminal-window', color: 'text-emerald-500' },
+                { title: 'Lamar Kerja', desc: 'Gunakan sertifikat & portofolio.', icon: 'ph-fill ph-rocket', color: 'text-yellow-500' }
+            ])
+
+            const logout = () => { isLoggedIn.value = false; navigate('landing'); }
+
+            return {
+                currentPage, isLoggedIn, isMobileMenuOpen, isDemoModalOpen, categories, categoriesPreview, navigate, 
+                onMouseMove, resetMouse, mouseX, mouseY, stats, steps, brands, allCourses, filteredCourses, 
+                activeCategoryFilter, activeLevelFilter, searchQuery, logout, activeRoadmap, roadmaps, currentRoadmapData,
+                timelineProgress, testimonials, testimonialsRow1, testimonialsRow2, mentorsList, faqs, impactStats,
+                impactStatsVisible, landingStatsVisible, webinars, jobs, blogPosts, getStepColorClass, getCourseByTitle, activeCourse, activeJob, activePost, courseSyllabus
+            }
+        }
+    }).mount('#app')
+</script>
+</body>
+</html>
